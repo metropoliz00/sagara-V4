@@ -30,7 +30,8 @@ const SHEETS = {
   LEARNING_DOCUMENTATION: "LearningDocumentation",
   SCHOOL_ASSETS: "SchoolAssets",
   BOS: "BOSManagement", // NEW BOS
-  BOOK_LOANS: "BookLoans"
+  BOOK_LOANS: "BookLoans",
+  BOOK_INVENTORY: "BookInventory" // NEW
 };
 
 const SUBJECT_SHEETS = {
@@ -86,7 +87,8 @@ function setupDatabase() {
     { name: SHEETS.SETTINGS, headers: ["Class ID", "Data (JSON)"] },
     { name: SHEETS.SCHOOL_ASSETS, headers: ["ID", "Nama Sarana/Prasarana", "Jumlah", "Kondisi", "Lokasi"] },
     { name: SHEETS.BOS, headers: ["ID", "Tanggal", "Tipe (income/expense)", "Kategori", "Deskripsi", "Jumlah"] }, // NEW BOS
-    { name: SHEETS.BOOK_LOANS, headers: ["ID", "Student ID", "Nama Siswa", "Class ID", "Buku (JSON)", "Jumlah", "Status", "Tanggal", "Keterangan"] }
+    { name: SHEETS.BOOK_LOANS, headers: ["ID", "Student ID", "Nama Siswa", "Class ID", "Buku (JSON)", "Jumlah", "Status", "Tanggal", "Keterangan"] },
+    { name: SHEETS.BOOK_INVENTORY, headers: ["ID", "Subject ID", "Name", "Stock", "Total Stock", "Cover URL (Base64)"] } // NEW
   ];
 
   Object.values(SUBJECT_SHEETS).forEach(sheetName => {
@@ -264,6 +266,11 @@ function handleRequest(e, method) {
     if (action === "saveBookLoan") return saveBookLoan(params.payload);
     if (action === "deleteBookLoan") return deleteBookLoan(params.id);
 
+    // Book Inventory API
+    if (action === "getBookInventory") return getBookInventory();
+    if (action === "saveBookInventory") return saveBookInventory(params.payload);
+    if (action === "uploadBookCover") return uploadBookCover(params.payload);
+
     // BOS API
     if (action === "getBOS") return getBOS();
     if (action === "saveBOS") return saveBOS(params.payload);
@@ -331,8 +338,8 @@ function deleteBOS(id){const sheet=getSheet(SHEETS.BOS);const data=sheet.getData
 return response({status:"error"})}
 
 function getBookLoans(user){const rows=getData(SHEETS.BOOK_LOANS);const data=rows.map(r=>({id:String(r[0]),studentId:String(r[1]),studentName:String(r[2]),classId:String(r[3]),books:parseJSON(r[4])||[],qty:Number(r[5]),status:String(r[6]),date:formatDate(r[7]),notes:String(r[8])}));return response({status:"success",data})}
-function saveBookLoan(item){const sheet=getSheet(SHEETS.BOOK_LOANS);const data=sheet.getDataRange().getValues();const idx=data.findIndex(r=>String(r[0])===String(item.id));const row=[item.id||Utilities.getUuid(),item.studentId,item.studentName,item.classId,JSON.stringify(item.books),item.qty,item.status,item.date,item.notes];if(idx>0)sheet.getRange(idx+1,1,1,row.length).setValues([row]);else sheet.appendRow(row);return response({status:"success",id:row[0]})}
-function deleteBookLoan(id){const sheet=getSheet(SHEETS.BOOK_LOANS);const data=sheet.getDataRange().getValues();const idx=data.findIndex(r=>String(r[0])===String(id));if(idx>0){sheet.deleteRow(idx+1);return response({status:"success"})}
+function saveBookLoan(item){const sheet=getSheet(SHEETS.BOOK_LOANS);const data=sheet.getDataRange().getValues();const idx=data.findIndex(r=>String(r[0])===String(item.id));const isNew=idx===-1;const oldStatus=isNew?null:String(data[idx][6]);const row=[item.id||Utilities.getUuid(),item.studentId,item.studentName,item.classId,JSON.stringify(item.books),item.qty,item.status,item.date,item.notes];if(!isNew){sheet.getRange(idx+1,1,1,row.length).setValues([row])}else{sheet.appendRow(row)}if(item.status==='Dipinjam'&&oldStatus!=='Dipinjam'){updateInventoryStock(item.books,item.qty,'decrement')}else if(item.status==='Dikembalikan'&&oldStatus==='Dipinjam'){updateInventoryStock(item.books,item.qty,'increment')}return response({status:"success",id:row[0]})}
+function deleteBookLoan(id){const sheet=getSheet(SHEETS.BOOK_LOANS);const data=sheet.getDataRange().getValues();const idx=data.findIndex(r=>String(r[0])===String(id));if(idx>0){const loanData=data[idx];const books=parseJSON(loanData[4])||[];const qty=Number(loanData[5]);const status=String(loanData[6]);if(status==='Dipinjam'){updateInventoryStock(books,qty,'increment')}sheet.deleteRow(idx+1);return response({status:"success"})}
 return response({status:"error"})}
 
 function getLiaisonLogs(user) {
@@ -681,6 +688,77 @@ function deleteSchoolAsset(id){const sheet=getSheet(SHEETS.SCHOOL_ASSETS);const 
 return response({status:"error"})}
 function restoreData(data){return response({status:"success",message:"Restore functionality logic implemented but disabled for safety."})}
 function parseJSON(str){try{return JSON.parse(str)}catch(e){return null}}
+
+// --- BOOK INVENTORY FUNCTIONS ---
+function getBookInventory() {
+  const sheet = getSheet(SHEETS.BOOK_INVENTORY);
+  if (sheet.getLastRow() < 2) { // Sheet is empty or only has headers, initialize it
+    const subjects = [
+      { id: 'pai', name: 'PAI' }, { id: 'pancasila', name: 'Pend. Pancasila' }, 
+      { id: 'indo', name: 'Bahasa Indonesia' }, { id: 'mat', name: 'Matematika' }, 
+      { id: 'ipas', name: 'IPAS' }, { id: 'senibudaya', name: 'Seni dan Budaya' }, 
+      { id: 'pjok', name: 'PJOK' }, { id: 'jawa', name: 'Bahasa Jawa' }, 
+      { id: 'inggris', name: 'Bahasa Inggris' }, { id: 'kka', name: 'KKA' }
+    ];
+    const initialData = subjects.map(s => [s.id, s.id, s.name, 30, 30, '']);
+    sheet.getRange(2, 1, initialData.length, initialData[0].length).setValues(initialData);
+  }
+  
+  const rows = getData(SHEETS.BOOK_INVENTORY);
+  const data = rows.map(r => ({
+    id: String(r[0]),
+    subjectId: String(r[1]),
+    name: String(r[2]),
+    stock: Number(r[3]),
+    totalStock: Number(r[4]),
+    coverUrl: String(r[5] || '')
+  }));
+  return response({ status: "success", data: data });
+}
+
+function saveBookInventory(inventory) {
+  const sheet = getSheet(SHEETS.BOOK_INVENTORY);
+  const data = inventory.map(item => [item.id, item.subjectId, item.name, item.stock, item.totalStock, item.coverUrl || '']);
+  
+  // Clear existing data (except header)
+  if (sheet.getLastRow() > 1) {
+    sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).clearContent();
+  }
+  
+  // Write new data
+  if (data.length > 0) {
+    sheet.getRange(2, 1, data.length, data[0].length).setValues(data);
+  }
+  
+  return response({ status: "success" });
+}
+
+function uploadBookCover(payload) {
+  const { bookId, coverUrl } = payload;
+  const sheet = getSheet(SHEETS.BOOK_INVENTORY);
+  const allData = sheet.getDataRange().getValues();
+  const rowIndex = allData.findIndex(r => String(r[0]) === String(bookId));
+
+  if (rowIndex > 0) {
+    sheet.getRange(rowIndex + 1, 6).setValue(coverUrl); // Column F for Cover URL
+    return response({ status: "success" });
+  }
+  return response({ status: "error", message: "Book not found" });
+}
+
+function updateInventoryStock(bookNames, qty, direction) {
+  const sheet = getSheet(SHEETS.BOOK_INVENTORY);
+  const allData = sheet.getDataRange().getValues();
+  
+  bookNames.forEach(name => {
+    const rowIndex = allData.findIndex(r => String(r[2]) === String(name));
+    if (rowIndex > 0) {
+      const currentStock = Number(allData[rowIndex][3]);
+      const newStock = direction === 'increment' ? currentStock + qty : currentStock - qty;
+      sheet.getRange(rowIndex + 1, 4).setValue(newStock);
+    }
+  });
+}
 function getProfiles(){
   const sheet = getSheet(SHEETS.PROFILES);
   const data = sheet.getDataRange().getValues();

@@ -1,6 +1,6 @@
 
 // ... (Previous imports and isApiConfigured remain the same)
-import { Student, AgendaItem, GradeRecord, GradeData, BehaviorLog, Extracurricular, TeacherProfileData, SchoolProfileData, User, Holiday, InventoryItem, Guest, ScheduleItem, PiketGroup, SikapAssessment, KarakterAssessment, SeatingLayouts, AcademicCalendarData, EmploymentLink, LearningReport, LiaisonLog, PermissionRequest, LearningJournalEntry, SupportDocument, OrganizationStructure, SchoolAsset, BOSTransaction, LearningDocumentation, BookLoan } from '../types';
+import { Student, AgendaItem, GradeRecord, GradeData, BehaviorLog, Extracurricular, TeacherProfileData, SchoolProfileData, User, Holiday, InventoryItem, Guest, ScheduleItem, PiketGroup, SikapAssessment, KarakterAssessment, SeatingLayouts, AcademicCalendarData, EmploymentLink, LearningReport, LiaisonLog, PermissionRequest, LearningJournalEntry, SupportDocument, OrganizationStructure, SchoolAsset, BOSTransaction, LearningDocumentation, BookLoan, BookInventory } from '../types';
 
 // PENTING: Menggunakan URL Deployment yang valid dan stabil.
 const API_URL = 'https://script.google.com/macros/s/AKfycbw56g3R3fo1ktBteBdIGIwAgC1YniDGHLGjvs4ycR4NFE9J4pzKqQBtMe1ntp7DmvmC/exec';
@@ -359,6 +359,18 @@ export const apiService = {
   },
   deleteBookLoan: async (id: string): Promise<void> => {
     await fetchApi('POST', { action: 'deleteBookLoan', id });
+  },
+
+  // --- Book Inventory ---
+  getBookInventory: async (): Promise<BookInventory[]> => {
+    const res = await fetchApi('POST', { action: 'getBookInventory' });
+    return res.status === 'success' ? res.data : [];
+  },
+  saveBookInventory: async (inventory: BookInventory[]): Promise<void> => {
+    await fetchApi('POST', { action: 'saveBookInventory', payload: inventory });
+  },
+  uploadBookCover: async (bookId: string, coverUrl: string): Promise<void> => {
+    await fetchApi('POST', { action: 'uploadBookCover', payload: { bookId, coverUrl } });
   },
 
   // --- BOS Management ---

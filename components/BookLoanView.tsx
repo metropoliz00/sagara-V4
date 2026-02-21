@@ -1,8 +1,9 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Book, Plus, Search, Trash2, CheckCircle, Clock, Filter, ChevronDown, ChevronUp, RotateCcw, Image as ImageIcon, Edit2, Save, X } from 'lucide-react';
+import { Book, Plus, Search, Trash2, CheckCircle, Clock, Filter, ChevronDown, ChevronUp, RotateCcw, Image as ImageIcon, Edit2, Save, X, Loader2 } from 'lucide-react';
 import { Student, BookLoan, BookInventory } from '../types';
 import { MOCK_SUBJECTS } from '../constants';
+import { apiService } from '../services/apiService';
 
 interface BookLoanViewProps {
   students: Student[];
@@ -31,48 +32,27 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
   const [notes, setNotes] = useState('');
 
   // Inventory State
-  const [inventory, setInventory] = useState<BookInventory[]>(() => {
-    const saved = localStorage.getItem('sagara_book_inventory');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // Merge with MOCK_SUBJECTS to ensure all subjects exist if constants changed
-        const merged = MOCK_SUBJECTS.map(s => {
-          const existing = parsed.find((p: BookInventory) => p.subjectId === s.id);
-          return existing || {
-            id: s.id,
-            subjectId: s.id,
-            name: s.name,
-            stock: 30,
-            totalStock: 30,
-            coverUrl: undefined
-          };
-        });
-        return merged;
-      } catch (e) {
-        console.error("Failed to parse inventory", e);
-      }
-    }
-    
-    return MOCK_SUBJECTS.map(s => ({
-      id: s.id,
-      subjectId: s.id,
-      name: s.name,
-      stock: 30,
-      totalStock: 30,
-      coverUrl: undefined
-    }));
-  });
-
+  const [inventory, setInventory] = useState<BookInventory[]>([]);
+  const [loadingInventory, setLoadingInventory] = useState(true);
   const [editingBookId, setEditingBookId] = useState<string | null>(null);
   const [editStockValue, setEditStockValue] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingBookId, setUploadingBookId] = useState<string | null>(null);
 
-  // Persist Inventory
   useEffect(() => {
-    localStorage.setItem('sagara_book_inventory', JSON.stringify(inventory));
-  }, [inventory]);
+    const fetchInventory = async () => {
+      try {
+        setLoadingInventory(true);
+        const data = await apiService.getBookInventory();
+        setInventory(data);
+      } catch (error) {
+        console.error("Failed to fetch book inventory:", error);
+      } finally {
+        setLoadingInventory(false);
+      }
+    };
+    fetchInventory();
+  }, []);
 
   // Use all subjects (10 items)
   const subjects = MOCK_SUBJECTS;
@@ -116,15 +96,17 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
   };
 
   // Inventory Handlers
-  const handleUpdateStock = (id: string) => {
-    setInventory(prev => prev.map(item => {
+  const handleUpdateStock = async (id: string) => {
+    const updatedInventory = inventory.map(item => {
       if (item.id === id) {
         const diff = editStockValue - item.totalStock;
         return { ...item, totalStock: editStockValue, stock: item.stock + diff };
       }
       return item;
-    }));
+    });
+    setInventory(updatedInventory);
     setEditingBookId(null);
+    await apiService.saveBookInventory(updatedInventory);
   };
 
   const startEditing = (book: BookInventory) => {
@@ -139,21 +121,29 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && uploadingBookId) {
+    const bookId = uploadingBookId;
+    if (file && bookId) {
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
+        const base64Url = reader.result as string;
         setInventory(prev => prev.map(item => 
-          item.id === uploadingBookId ? { ...item, coverUrl: reader.result as string } : item
+          item.id === bookId ? { ...item, coverUrl: base64Url } : item
         ));
         setUploadingBookId(null);
+        try {
+          await apiService.uploadBookCover(bookId, base64Url);
+        } catch (error) {
+          console.error("Failed to upload cover:", error);
+          // Optionally revert UI change on error
+        }
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedStudentId || selectedBooks.length === 0) return;
 
@@ -169,14 +159,6 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
         alert(`Stok tidak cukup untuk: ${outOfStock.map(i => i.name).join(', ')}`);
         return;
       }
-
-      // Decrement Stock
-      setInventory(prev => prev.map(item => {
-        if (selectedBooks.includes(item.name)) {
-          return { ...item, stock: item.stock - qty };
-        }
-        return item;
-      }));
     }
 
     const newLoan: BookLoan = {
@@ -191,41 +173,34 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
       notes: notes
     };
 
-    onSaveLoan(newLoan);
+    await onSaveLoan(newLoan);
+    
+    // Refetch inventory to get updated stock
+    const updatedInventory = await apiService.getBookInventory();
+    setInventory(updatedInventory);
+
     resetForm();
   };
 
-  const handleReturnLoan = (loan: BookLoan) => {
-    // Increment Stock
-    if (loan.status === 'Dipinjam') {
-      setInventory(prev => prev.map(item => {
-        if (loan.books.includes(item.name)) {
-          return { ...item, stock: item.stock + loan.qty };
-        }
-        return item;
-      }));
-    }
-
+  const handleReturnLoan = async (loan: BookLoan) => {
     const updatedLoan: BookLoan = {
       ...loan,
       status: 'Dikembalikan',
       notes: loan.notes ? `${loan.notes} (Dikembalikan pada ${formatDateIndo(new Date().toISOString())})` : `Dikembalikan pada ${formatDateIndo(new Date().toISOString())}`
     };
-    onSaveLoan(updatedLoan);
+    await onSaveLoan(updatedLoan);
+
+    // Refetch inventory to get updated stock
+    const updatedInventory = await apiService.getBookInventory();
+    setInventory(updatedInventory);
   };
 
-  const handleDeleteLoanWrapper = (loan: BookLoan) => {
+  const handleDeleteLoanWrapper = async (loan: BookLoan) => {
     if (window.confirm('Apakah Anda yakin ingin menghapus data peminjaman ini?')) {
-      // Restore stock if deleting a borrowed record
-      if (loan.status === 'Dipinjam') {
-        setInventory(prev => prev.map(item => {
-          if (loan.books.includes(item.name)) {
-            return { ...item, stock: item.stock + loan.qty };
-          }
-          return item;
-        }));
-      }
-      onDeleteLoan(loan.id);
+      await onDeleteLoan(loan.id);
+      // Refetch inventory to get updated stock
+      const updatedInventory = await apiService.getBookInventory();
+      setInventory(updatedInventory);
     }
   };
 
@@ -271,7 +246,12 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
           <ImageIcon className="mr-2 text-indigo-500" size={20} /> Stok Buku Paket
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {inventory.map((book) => (
+          {loadingInventory ? (
+            <div className="col-span-full flex justify-center items-center p-8">
+              <Loader2 className="animate-spin text-indigo-600" size={32} />
+              <span className="ml-2 text-gray-500">Memuat data stok...</span>
+            </div>
+          ) : inventory.map((book) => (
             <div key={book.id} className="group relative bg-gray-50 rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-all">
               <div className="aspect-[3/4] bg-gray-200 relative overflow-hidden">
                 {book.coverUrl ? (
