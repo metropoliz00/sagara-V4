@@ -101,7 +101,7 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
   };
 
   // Inventory Handlers
-  const handleUpdateStock = async (id: string) => {
+  const handleUpdateStock = (id: string) => {
     const updatedInventory = inventory.map(item => {
       if (item.id === id) {
         const diff = editStockValue - item.totalStock;
@@ -111,7 +111,6 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
     });
     setInventory(updatedInventory);
     setEditingBookId(null);
-    await apiService.saveBookInventory(updatedInventory);
   };
 
   const startEditing = (book: BookInventory) => {
@@ -126,25 +125,32 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
     }
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     const bookId = uploadingBookId;
     if (file && bookId) {
       const reader = new FileReader();
-      reader.onloadend = async () => {
+      reader.onloadend = () => {
         const base64Url = reader.result as string;
         setInventory(prev => prev.map(item => 
           item.id === bookId ? { ...item, coverUrl: base64Url } : item
         ));
         setUploadingBookId(null);
-        try {
-          await apiService.uploadBookCover(bookId, base64Url);
-        } catch (error) {
-          console.error("Failed to upload cover:", error);
-          // Optionally revert UI change on error
-        }
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    try {
+      setLoadingInventory(true);
+      await apiService.saveBookInventory(inventory);
+      alert('Perubahan stok dan cover buku berhasil disimpan!');
+    } catch (error) {
+      console.error("Failed to save inventory:", error);
+      alert('Gagal menyimpan perubahan.');
+    } finally {
+      setLoadingInventory(false);
     }
   };
 
@@ -247,9 +253,19 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
 
       {/* Visual Stock Section */}
       <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-          <ImageIcon className="mr-2 text-indigo-500" size={20} /> Stok Buku Paket
-        </h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold text-gray-800 flex items-center">
+            <ImageIcon className="mr-2 text-indigo-500" size={20} /> Stok Buku Paket
+          </h3>
+          <button 
+            onClick={handleSaveChanges}
+            disabled={loadingInventory}
+            className="flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loadingInventory ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            <span>Simpan Perubahan</span>
+          </button>
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {loadingInventory ? (
             <div className="col-span-full flex justify-center items-center p-8">
