@@ -12,6 +12,7 @@ interface BookLoanViewProps {
   onDeleteLoan: (id: string) => void;
   isDemoMode: boolean;
   classId: string;
+  onShowNotification: (message: string, type: 'success' | 'error' | 'warning') => void;
 }
 
 const BookLoanView: React.FC<BookLoanViewProps> = ({
@@ -20,7 +21,8 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
   onSaveLoan,
   onDeleteLoan,
   isDemoMode,
-  classId
+  classId,
+  onShowNotification
 }) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -145,10 +147,10 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
     try {
       setLoadingInventory(true);
       await apiService.saveBookInventory(inventory);
-      alert('Perubahan stok dan cover buku berhasil disimpan!');
+      onShowNotification('Perubahan stok dan cover buku berhasil disimpan!', 'success');
     } catch (error) {
       console.error("Failed to save inventory:", error);
-      alert('Gagal menyimpan perubahan.');
+      onShowNotification('Gagal menyimpan perubahan. Silakan coba lagi.', 'error');
     } finally {
       setLoadingInventory(false);
     }
@@ -167,7 +169,7 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
       const outOfStock = selectedInventoryItems.filter(i => i.stock < qty);
       
       if (outOfStock.length > 0) {
-        alert(`Stok tidak cukup untuk: ${outOfStock.map(i => i.name).join(', ')}`);
+        onShowNotification(`Stok tidak cukup untuk: ${outOfStock.map(i => i.name).join(', ')}`, 'error');
         return;
       }
     }

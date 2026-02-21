@@ -738,17 +738,55 @@ function saveBookInventory(inventory) {
   const sheet = getSheet(SHEETS.BOOK_INVENTORY);
   const allData = sheet.getDataRange().getValues();
   
-  // We process each item individually to update or insert
-  inventory.forEach(item => {
-    const rowData = [item.id, item.classId, item.subjectId, item.name, item.stock, item.totalStock, item.coverUrl || ''];
-    const rowIndex = allData.findIndex(r => String(r[0]) === String(item.id));
-    
-    if (rowIndex > 0) {
-      sheet.getRange(rowIndex + 1, 1, 1, rowData.length).setValues([rowData]);
-    } else {
-      sheet.appendRow(rowData);
+  // Create a map of existing data for faster lookup
+  // Key: ID, Value: Row Index (0-based relative to allData)
+  const idMap = new Map();
+  allData.forEach((row, index) => {
+    if (index > 0) { // Skip header
+      idMap.set(String(row[0]), index);
     }
   });
+
+  const updates = [];
+  const newRows = [];
+
+  inventory.forEach(item => {
+    const rowData = [item.id, item.classId, item.subjectId, item.name, item.stock, item.totalStock, item.coverUrl || ''];
+    const rowIndex = idMap.get(String(item.id));
+
+    if (rowIndex !== undefined) {
+      // Update existing row
+      // We push an object with row index and data to update later
+      // Note: sheet.getRange is 1-based, so rowIndex + 1
+      updates.push({ row: rowIndex + 1, data: rowData });
+    } else {
+      // New row
+      newRows.push(rowData);
+    }
+  });
+
+  // Apply updates
+  // Since Google Sheets API doesn't support batch update of non-contiguous rows easily via simple API,
+  // we still have to loop for updates, but at least we separated the logic.
+  // However, if we want to be safer against timeouts, we can try to minimize writes.
+  
+  // A better approach for bulk updates if many rows change:
+  // 1. Read all data
+  // 2. Update in memory
+  // 3. Write back all data (if not too large)
+  // But writing back all data might be risky if sheet is huge.
+  
+  // Let's stick to row-by-row for updates but ensure we handle errors gracefully?
+  // Or better: Group updates by contiguous ranges? No, IDs are random.
+  
+  // Let's try to just write.
+  updates.forEach(update => {
+    sheet.getRange(update.row, 1, 1, update.data.length).setValues([update.data]);
+  });
+
+  if (newRows.length > 0) {
+    sheet.getRange(sheet.getLastRow() + 1, 1, newRows.length, newRows[0].length).setValues(newRows);
+  }
   
   return response({ status: "success" });
 }
