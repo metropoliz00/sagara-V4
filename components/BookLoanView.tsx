@@ -11,6 +11,7 @@ interface BookLoanViewProps {
   onSaveLoan: (loan: BookLoan) => void;
   onDeleteLoan: (id: string) => void;
   isDemoMode: boolean;
+  classId: string;
 }
 
 const BookLoanView: React.FC<BookLoanViewProps> = ({
@@ -18,7 +19,8 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
   bookLoans,
   onSaveLoan,
   onDeleteLoan,
-  isDemoMode
+  isDemoMode,
+  classId
 }) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -43,7 +45,7 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
     const fetchInventory = async () => {
       try {
         setLoadingInventory(true);
-        const data = await apiService.getBookInventory();
+        const data = await apiService.getBookInventory(classId);
         setInventory(data);
       } catch (error) {
         console.error("Failed to fetch book inventory:", error);
@@ -51,8 +53,10 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
         setLoadingInventory(false);
       }
     };
-    fetchInventory();
-  }, []);
+    if (classId) {
+      fetchInventory();
+    }
+  }, [classId]);
 
   // Use all subjects (10 items)
   const subjects = MOCK_SUBJECTS;
@@ -176,7 +180,7 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
     await onSaveLoan(newLoan);
     
     // Refetch inventory to get updated stock
-    const updatedInventory = await apiService.getBookInventory();
+    const updatedInventory = await apiService.getBookInventory(classId);
     setInventory(updatedInventory);
 
     resetForm();
@@ -191,7 +195,7 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
     await onSaveLoan(updatedLoan);
 
     // Refetch inventory to get updated stock
-    const updatedInventory = await apiService.getBookInventory();
+    const updatedInventory = await apiService.getBookInventory(classId);
     setInventory(updatedInventory);
   };
 
@@ -199,7 +203,7 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
     if (window.confirm('Apakah Anda yakin ingin menghapus data peminjaman ini?')) {
       await onDeleteLoan(loan.id);
       // Refetch inventory to get updated stock
-      const updatedInventory = await apiService.getBookInventory();
+      const updatedInventory = await apiService.getBookInventory(classId);
       setInventory(updatedInventory);
     }
   };

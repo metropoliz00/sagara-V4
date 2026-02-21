@@ -88,7 +88,7 @@ function setupDatabase() {
     { name: SHEETS.SCHOOL_ASSETS, headers: ["ID", "Nama Sarana/Prasarana", "Jumlah", "Kondisi", "Lokasi"] },
     { name: SHEETS.BOS, headers: ["ID", "Tanggal", "Tipe (income/expense)", "Kategori", "Deskripsi", "Jumlah"] }, // NEW BOS
     { name: SHEETS.BOOK_LOANS, headers: ["ID", "Student ID", "Nama Siswa", "Class ID", "Buku (JSON)", "Jumlah", "Status", "Tanggal", "Keterangan"] },
-    { name: SHEETS.BOOK_INVENTORY, headers: ["ID", "Subject ID", "Name", "Stock", "Total Stock", "Cover URL (Base64)"] } // NEW
+    { name: SHEETS.BOOK_INVENTORY, headers: ["ID", "Class ID", "Subject ID", "Name", "Stock", "Total Stock", "Cover URL (Base64)"] } // NEW
   ];
 
   Object.values(SUBJECT_SHEETS).forEach(sheetName => {
@@ -267,7 +267,7 @@ function handleRequest(e, method) {
     if (action === "deleteBookLoan") return deleteBookLoan(params.id);
 
     // Book Inventory API
-    if (action === "getBookInventory") return getBookInventory();
+    if (action === "getBookInventory") return getBookInventory(classId);
     if (action === "saveBookInventory") return saveBookInventory(params.payload);
     if (action === "uploadBookCover") return uploadBookCover(params.payload);
 
@@ -338,8 +338,8 @@ function deleteBOS(id){const sheet=getSheet(SHEETS.BOS);const data=sheet.getData
 return response({status:"error"})}
 
 function getBookLoans(user){const rows=getData(SHEETS.BOOK_LOANS);const data=rows.map(r=>({id:String(r[0]),studentId:String(r[1]),studentName:String(r[2]),classId:String(r[3]),books:parseJSON(r[4])||[],qty:Number(r[5]),status:String(r[6]),date:formatDate(r[7]),notes:String(r[8])}));return response({status:"success",data})}
-function saveBookLoan(item){const sheet=getSheet(SHEETS.BOOK_LOANS);const data=sheet.getDataRange().getValues();const idx=data.findIndex(r=>String(r[0])===String(item.id));const isNew=idx===-1;const oldStatus=isNew?null:String(data[idx][6]);const row=[item.id||Utilities.getUuid(),item.studentId,item.studentName,item.classId,JSON.stringify(item.books),item.qty,item.status,item.date,item.notes];if(!isNew){sheet.getRange(idx+1,1,1,row.length).setValues([row])}else{sheet.appendRow(row)}if(item.status==='Dipinjam'&&oldStatus!=='Dipinjam'){updateInventoryStock(item.books,item.qty,'decrement')}else if(item.status==='Dikembalikan'&&oldStatus==='Dipinjam'){updateInventoryStock(item.books,item.qty,'increment')}return response({status:"success",id:row[0]})}
-function deleteBookLoan(id){const sheet=getSheet(SHEETS.BOOK_LOANS);const data=sheet.getDataRange().getValues();const idx=data.findIndex(r=>String(r[0])===String(id));if(idx>0){const loanData=data[idx];const books=parseJSON(loanData[4])||[];const qty=Number(loanData[5]);const status=String(loanData[6]);if(status==='Dipinjam'){updateInventoryStock(books,qty,'increment')}sheet.deleteRow(idx+1);return response({status:"success"})}
+function saveBookLoan(item){const sheet=getSheet(SHEETS.BOOK_LOANS);const data=sheet.getDataRange().getValues();const idx=data.findIndex(r=>String(r[0])===String(item.id));const isNew=idx===-1;const oldStatus=isNew?null:String(data[idx][6]);const row=[item.id||Utilities.getUuid(),item.studentId,item.studentName,item.classId,JSON.stringify(item.books),item.qty,item.status,item.date,item.notes];if(!isNew){sheet.getRange(idx+1,1,1,row.length).setValues([row])}else{sheet.appendRow(row)}if(item.status==='Dipinjam'&&oldStatus!=='Dipinjam'){updateInventoryStock(item.classId,item.books,item.qty,'decrement')}else if(item.status==='Dikembalikan'&&oldStatus==='Dipinjam'){updateInventoryStock(item.classId,item.books,item.qty,'increment')}return response({status:"success",id:row[0]})}
+function deleteBookLoan(id){const sheet=getSheet(SHEETS.BOOK_LOANS);const data=sheet.getDataRange().getValues();const idx=data.findIndex(r=>String(r[0])===String(id));if(idx>0){const loanData=data[idx];const classId=String(loanData[3]);const books=parseJSON(loanData[4])||[];const qty=Number(loanData[5]);const status=String(loanData[6]);if(status==='Dipinjam'){updateInventoryStock(classId,books,qty,'increment')}sheet.deleteRow(idx+1);return response({status:"success"})}
 return response({status:"error"})}
 
 function getLiaisonLogs(user) {
@@ -690,9 +690,14 @@ function restoreData(data){return response({status:"success",message:"Restore fu
 function parseJSON(str){try{return JSON.parse(str)}catch(e){return null}}
 
 // --- BOOK INVENTORY FUNCTIONS ---
-function getBookInventory() {
+function getBookInventory(classId) {
   const sheet = getSheet(SHEETS.BOOK_INVENTORY);
-  if (sheet.getLastRow() < 2) { // Sheet is empty or only has headers, initialize it
+  
+  // Check if we need to initialize for this specific class
+  const allData = getData(SHEETS.BOOK_INVENTORY);
+  const classData = allData.filter(r => String(r[1]) === classId);
+  
+  if (classData.length === 0 && classId) {
     const subjects = [
       { id: 'pai', name: 'PAI' }, { id: 'pancasila', name: 'Pend. Pancasila' }, 
       { id: 'indo', name: 'Bahasa Indonesia' }, { id: 'mat', name: 'Matematika' }, 
@@ -700,35 +705,50 @@ function getBookInventory() {
       { id: 'pjok', name: 'PJOK' }, { id: 'jawa', name: 'Bahasa Jawa' }, 
       { id: 'inggris', name: 'Bahasa Inggris' }, { id: 'kka', name: 'KKA' }
     ];
-    const initialData = subjects.map(s => [s.id, s.id, s.name, 30, 30, '']);
-    sheet.getRange(2, 1, initialData.length, initialData[0].length).setValues(initialData);
+    // ID format: classId_subjectId
+    const initialData = subjects.map(s => [`${classId}_${s.id}`, classId, s.id, s.name, 30, 30, '']);
+    sheet.getRange(sheet.getLastRow() + 1, 1, initialData.length, initialData[0].length).setValues(initialData);
+    
+    // Return the initialized data immediately
+    const data = initialData.map(r => ({
+      id: String(r[0]),
+      classId: String(r[1]),
+      subjectId: String(r[2]),
+      name: String(r[3]),
+      stock: Number(r[4]),
+      totalStock: Number(r[5]),
+      coverUrl: String(r[6] || '')
+    }));
+    return response({ status: "success", data: data });
   }
   
-  const rows = getData(SHEETS.BOOK_INVENTORY);
-  const data = rows.map(r => ({
+  const data = classData.map(r => ({
     id: String(r[0]),
-    subjectId: String(r[1]),
-    name: String(r[2]),
-    stock: Number(r[3]),
-    totalStock: Number(r[4]),
-    coverUrl: String(r[5] || '')
+    classId: String(r[1]),
+    subjectId: String(r[2]),
+    name: String(r[3]),
+    stock: Number(r[4]),
+    totalStock: Number(r[5]),
+    coverUrl: String(r[6] || '')
   }));
   return response({ status: "success", data: data });
 }
 
 function saveBookInventory(inventory) {
   const sheet = getSheet(SHEETS.BOOK_INVENTORY);
-  const data = inventory.map(item => [item.id, item.subjectId, item.name, item.stock, item.totalStock, item.coverUrl || '']);
+  const allData = sheet.getDataRange().getValues();
   
-  // Clear existing data (except header)
-  if (sheet.getLastRow() > 1) {
-    sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).clearContent();
-  }
-  
-  // Write new data
-  if (data.length > 0) {
-    sheet.getRange(2, 1, data.length, data[0].length).setValues(data);
-  }
+  // We process each item individually to update or insert
+  inventory.forEach(item => {
+    const rowData = [item.id, item.classId, item.subjectId, item.name, item.stock, item.totalStock, item.coverUrl || ''];
+    const rowIndex = allData.findIndex(r => String(r[0]) === String(item.id));
+    
+    if (rowIndex > 0) {
+      sheet.getRange(rowIndex + 1, 1, 1, rowData.length).setValues([rowData]);
+    } else {
+      sheet.appendRow(rowData);
+    }
+  });
   
   return response({ status: "success" });
 }
@@ -740,22 +760,23 @@ function uploadBookCover(payload) {
   const rowIndex = allData.findIndex(r => String(r[0]) === String(bookId));
 
   if (rowIndex > 0) {
-    sheet.getRange(rowIndex + 1, 6).setValue(coverUrl); // Column F for Cover URL
+    sheet.getRange(rowIndex + 1, 7).setValue(coverUrl); // Column G (7) for Cover URL
     return response({ status: "success" });
   }
   return response({ status: "error", message: "Book not found" });
 }
 
-function updateInventoryStock(bookNames, qty, direction) {
+function updateInventoryStock(classId, bookNames, qty, direction) {
   const sheet = getSheet(SHEETS.BOOK_INVENTORY);
   const allData = sheet.getDataRange().getValues();
   
   bookNames.forEach(name => {
-    const rowIndex = allData.findIndex(r => String(r[2]) === String(name));
+    // Find by Class ID AND Name
+    const rowIndex = allData.findIndex(r => String(r[1]) === String(classId) && String(r[3]) === String(name));
     if (rowIndex > 0) {
-      const currentStock = Number(allData[rowIndex][3]);
+      const currentStock = Number(allData[rowIndex][4]); // Column E (5) is Stock
       const newStock = direction === 'increment' ? currentStock + qty : currentStock - qty;
-      sheet.getRange(rowIndex + 1, 4).setValue(newStock);
+      sheet.getRange(rowIndex + 1, 5).setValue(newStock);
     }
   });
 }

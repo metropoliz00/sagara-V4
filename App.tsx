@@ -824,6 +824,7 @@ const App: React.FC = () => {
                   onSaveLoan={handleSaveBookLoan}
                   onDeleteLoan={handleDeleteBookLoan}
                   isDemoMode={isDemoMode}
+                  classId={activeClassId}
                />;
       case 'bos-admin': // NEW CASE
         if (!isAdminRole && !isSupervisor) { setCurrentView('dashboard'); return null; }

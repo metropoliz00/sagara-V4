@@ -3,7 +3,7 @@
 import { Student, AgendaItem, GradeRecord, GradeData, BehaviorLog, Extracurricular, TeacherProfileData, SchoolProfileData, User, Holiday, InventoryItem, Guest, ScheduleItem, PiketGroup, SikapAssessment, KarakterAssessment, SeatingLayouts, AcademicCalendarData, EmploymentLink, LearningReport, LiaisonLog, PermissionRequest, LearningJournalEntry, SupportDocument, OrganizationStructure, SchoolAsset, BOSTransaction, LearningDocumentation, BookLoan, BookInventory } from '../types';
 
 // PENTING: Menggunakan URL Deployment yang valid dan stabil.
-const API_URL = 'https://script.google.com/macros/s/AKfycbyz7W8HGwQuwsLurxBU2wtXCCx8tqHnzP-tQxOjvD-1bHOHQjs0hR8eDofP8hAxyoUv/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxm65eJkuvDqH6vITF4oQr6UY00_kIS2dl7YWFUtutNsTSnLZPgNE8FwuuTqnZ9z726/exec';
 
 const isApiConfigured = () => {
   return API_URL && API_URL.startsWith('http');
@@ -362,8 +362,8 @@ export const apiService = {
   },
 
   // --- Book Inventory ---
-  getBookInventory: async (): Promise<BookInventory[]> => {
-    const res = await fetchApi('POST', { action: 'getBookInventory' });
+  getBookInventory: async (classId: string): Promise<BookInventory[]> => {
+    const res = await fetchApi('POST', { action: 'getBookInventory', classId });
     return res.status === 'success' ? res.data : [];
   },
   saveBookInventory: async (inventory: BookInventory[]): Promise<void> => {

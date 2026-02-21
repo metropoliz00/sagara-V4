@@ -399,6 +399,7 @@ export interface BookLoan {
 
 export interface BookInventory {
   id: string;
+  classId: string;
   subjectId: string;
   name: string;
   stock: number;
