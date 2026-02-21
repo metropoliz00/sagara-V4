@@ -77,11 +77,12 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
 
   const filteredLoans = useMemo(() => {
     return bookLoans.filter(loan => {
+      const matchesClass = loan.classId === classId;
       const matchesSearch = loan.studentName.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = filterStatus === 'Semua' || loan.status === filterStatus;
-      return matchesSearch && matchesStatus;
+      return matchesClass && matchesSearch && matchesStatus;
     });
-  }, [bookLoans, searchTerm, filterStatus]);
+  }, [bookLoans, searchTerm, filterStatus, classId]);
 
   const handleToggleBook = (bookName: string) => {
     setSelectedBooks(prev => 
