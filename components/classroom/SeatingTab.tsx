@@ -1,13 +1,13 @@
 
 import React, { useState } from 'react';
-import { User, GripVertical, XCircle, Save, LayoutGrid, Users, BoxSelect, UserCircle, X } from 'lucide-react';
+import { User, GripVertical, XCircle, Save, LayoutGrid, Users, BoxSelect, UserCircle, X, Loader2 } from 'lucide-react';
 import { Student, TeacherProfileData, SeatingLayouts } from '../../types';
 
 interface SeatingTabProps {
   seatingLayouts: SeatingLayouts;
   setSeatingLayouts: React.Dispatch<React.SetStateAction<SeatingLayouts>>;
   students: Student[];
-  onSave: () => void;
+  onSave: () => Promise<void>;
   teacherProfile?: TeacherProfileData;
 }
 
@@ -17,6 +17,16 @@ const SeatingTab: React.FC<SeatingTabProps> = ({ seatingLayouts, setSeatingLayou
   const [draggedStudentId, setDraggedStudentId] = useState<string | null>(null);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('classical');
   const [isStudentPanelVisible, setIsStudentPanelVisible] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSaveClick = async () => {
+    setIsSaving(true);
+    try {
+      await onSave();
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // --- Helpers to get and set the active layout based on layoutMode ---
   const getActiveLayout = (): (string | null)[] => {
@@ -322,8 +332,13 @@ const SeatingTab: React.FC<SeatingTabProps> = ({ seatingLayouts, setSeatingLayou
                 {unseatedStudents.length === 0 && <p className="text-xs text-gray-400 text-center italic py-10">Semua siswa sudah duduk.</p>}
             </div>
             
-            <button onClick={onSave} className="mt-4 w-full bg-indigo-600 text-white py-2 rounded-lg font-bold hover:bg-indigo-700 shadow flex items-center justify-center">
-                <Save size={16} className="mr-2"/> Simpan Posisi
+            <button 
+                onClick={handleSaveClick} 
+                disabled={isSaving}
+                className="mt-4 w-full bg-indigo-600 text-white py-2 rounded-lg font-bold hover:bg-indigo-700 shadow flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                {isSaving ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Save size={16} className="mr-2"/>}
+                {isSaving ? 'Menyimpan...' : 'Simpan Posisi'}
             </button>
             </div>
        )}
