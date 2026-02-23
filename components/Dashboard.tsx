@@ -119,13 +119,14 @@ const Dashboard: React.FC<DashboardProps> = ({
       const targetDate = new Date(monday);
       targetDate.setDate(monday.getDate() + i);
       const dateStr = getLocalISODate(targetDate);
+      const isHoliday = holidays.some(h => h.date === dateStr);
       
       let presentCount = 0;
       let sickCount = 0;
       let permitCount = 0;
       let alphaCount = 0;
 
-      if (dateStr <= todayStr) {
+      if (dateStr <= todayStr && !isHoliday) {
         const dayRecords = classAttendanceRecords.filter(r => r.date === dateStr);
         presentCount = new Set(dayRecords.filter(r => r.status === 'present').map(r => r.studentId)).size;
         sickCount = new Set(dayRecords.filter(r => r.status === 'sick').map(r => r.studentId)).size;
@@ -157,7 +158,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       });
     }
     return weekData;
-  }, [classAttendanceRecords, students]);
+  }, [classAttendanceRecords, students, holidays]);
 
   const absentToday = useMemo(() => {
     const todayStr = getLocalISODate(new Date());
@@ -195,13 +196,14 @@ const Dashboard: React.FC<DashboardProps> = ({
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
         const targetDate = new Date(dateStr + 'T00:00:00');
         const isSunday = targetDate.getDay() === 0;
+        const isHoliday = holidays.some(h => h.date === dateStr);
         
         let presentCount = 0;
         let sickCount = 0;
         let permitCount = 0;
         let alphaCount = 0;
 
-        if (dateStr <= todayStr && !isSunday) {
+        if (dateStr <= todayStr && !isSunday && !isHoliday) {
             const dayRecords = monthlyRecords.filter(r => r.date === dateStr);
             presentCount = new Set(dayRecords.filter(r => r.status === 'present').map(r => r.studentId)).size;
             sickCount = new Set(dayRecords.filter(r => r.status === 'sick').map(r => r.studentId)).size;
@@ -233,7 +235,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         });
     }
     return data;
-  }, [classAttendanceRecords, students]);
+  }, [classAttendanceRecords, students, holidays]);
 
   const curriculumProgress = useMemo(() => {
     if (!subjects || !grades || students.length === 0) return [];
