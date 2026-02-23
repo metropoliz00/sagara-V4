@@ -46,6 +46,7 @@ interface DashboardContainerProps {
   hasNewMessages?: boolean;
   unreadMessageCount?: number;
   bookLoans: BookLoan[];
+  kktpMap: Record<string, number>;
 }
 
 const DashboardContainer: React.FC<DashboardContainerProps> = ({
@@ -83,7 +84,8 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({
   learningDocumentation,
   hasNewMessages = false,
   unreadMessageCount = 0,
-  bookLoans
+  bookLoans,
+  kktpMap
 }) => {
   if (isStudentRole) {
     if (!myStudentData) {
@@ -156,6 +158,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({
       learningDocumentation={learningDocumentation || []}
       hasNewMessages={hasNewMessages}
       unreadMessageCount={unreadMessageCount}
+      kktpMap={kktpMap}
     />
   );
 };

@@ -75,6 +75,7 @@ const App: React.FC = () => {
   const [schoolAssets, setSchoolAssets] = useState<SchoolAsset[]>([]);
   const [bosTransactions, setBosTransactions] = useState<BOSTransaction[]>([]); // NEW STATE
   const [bookLoans, setBookLoans] = useState<BookLoan[]>([]);
+  const [kktpMap, setKktpMap] = useState<Record<string, number>>({});
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error' | 'warning'} | null>(null);
   
   // ... (Rest of existing state code)
@@ -578,6 +579,7 @@ const App: React.FC = () => {
         apiService.getPermissionRequests(currentUser),
         apiService.getSupportDocuments(currentUser),
         apiService.getBookLoans(currentUser),
+        apiService.getClassConfig(classIdToFetch),
       ];
 
       // Add inventory fetch if admin/supervisor
@@ -607,7 +609,7 @@ const App: React.FC = () => {
       const [
           fUsers, fStudents, fAgendas, fGrades, fCounseling, fExtracurriculars, 
           fProfiles, fHolidays, fAttendance, fSikap, fKarakter, fLinks, fReports, 
-          fLearningDocs, fLiaison, fPermissions, fSupportDocs, fBookLoans, fInventory, fSchoolAssets, fBOS,
+          fLearningDocs, fLiaison, fPermissions, fSupportDocs, fBookLoans, fClassConfig, fInventory, fSchoolAssets, fBOS,
           _delay // Placeholder for minDelay
       ] = await Promise.all(promises);
       
@@ -640,6 +642,126 @@ const App: React.FC = () => {
       // Set BOS state
       if (Array.isArray(fBOS)) {
           setBosTransactions(fBOS as BOSTransaction[]);
+      }
+
+      if (fClassConfig && fClassConfig.KKTP) {
+        setKktpMap(fClassConfig.KKTP);
+      } else {
+        setKktpMap({});
+      }
+
+      if (fClassConfig && fClassConfig.KKTP) {
+        setKktpMap(fClassConfig.KKTP);
+      } else {
+        setKktpMap({});
+      }
+
+      if (fClassConfig && fClassConfig.KKTP) {
+        setKktpMap(fClassConfig.KKTP);
+      } else {
+        setKktpMap({});
+      }
+
+      if (fClassConfig && fClassConfig.KKTP) {
+        setKktpMap(fClassConfig.KKTP);
+      } else {
+        setKktpMap({});
+      }
+
+      if (fClassConfig && fClassConfig.KKTP) {
+        setKktpMap(fClassConfig.KKTP);
+      } else {
+        setKktpMap({});
+      }
+
+      if (fClassConfig && fClassConfig.KKTP) {
+        setKktpMap(fClassConfig.KKTP);
+      } else {
+        setKktpMap({});
+      }
+
+      if (fClassConfig && fClassConfig.KKTP) {
+        setKktpMap(fClassConfig.KKTP);
+      } else {
+        setKktpMap({});
+      }
+
+      if (fClassConfig && fClassConfig.KKTP) {
+        setKktpMap(fClassConfig.KKTP);
+      } else {
+        setKktpMap({});
+      }
+
+      if (fClassConfig && fClassConfig.KKTP) {
+        setKktpMap(fClassConfig.KKTP);
+      } else {
+        setKktpMap({});
+      }
+
+      if (fClassConfig && fClassConfig.KKTP) {
+        setKktpMap(fClassConfig.KKTP);
+      } else {
+        setKktpMap({});
+      }
+
+      if (fClassConfig && fClassConfig.KKTP) {
+        setKktpMap(fClassConfig.KKTP);
+      } else {
+        setKktpMap({});
+      }
+
+      if (fClassConfig && fClassConfig.KKTP) {
+        setKktpMap(fClassConfig.KKTP);
+      } else {
+        setKktpMap({});
+      }
+
+      if (fClassConfig && fClassConfig.KKTP) {
+        setKktpMap(fClassConfig.KKTP);
+      } else {
+        setKktpMap({});
+      }
+
+      if (fClassConfig && fClassConfig.KKTP) {
+        setKktpMap(fClassConfig.KKTP);
+      } else {
+        setKktpMap({});
+      }
+
+      if (fClassConfig && fClassConfig.KKTP) {
+        setKktpMap(fClassConfig.KKTP);
+      } else {
+        setKktpMap({});
+      }
+
+      if (fClassConfig && fClassConfig.KKTP) {
+        setKktpMap(fClassConfig.KKTP);
+      } else {
+        setKktpMap({});
+      }
+
+      if (fClassConfig && fClassConfig.KKTP) {
+        setKktpMap(fClassConfig.KKTP);
+      } else {
+        setKktpMap({});
+      }
+
+      if (fClassConfig && fClassConfig.KKTP) {
+        setKktpMap(fClassConfig.KKTP);
+      } else {
+        setKktpMap({});
+      }
+
+      if (fClassConfig && fClassConfig.KKTP) {
+        setKktpMap(fClassConfig.KKTP);
+      } else {
+        setKktpMap({});
+      }
+
+      if (fClassConfig && fClassConfig.KKTP) {
+        setKktpMap(fClassConfig.KKTP);
+      } else {
+        setKktpMap({});
       }
       
       const hydratedPermissions = (fPermissions as PermissionRequest[]).map((p: any) => ({

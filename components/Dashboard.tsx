@@ -29,6 +29,7 @@ interface DashboardProps {
   learningDocumentation?: LearningDocumentation[];
   hasNewMessages?: boolean;
   unreadMessageCount?: number;
+  kktpMap: Record<string, number>;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ 
@@ -36,7 +37,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   teacherName, teachingClass, onChangeView, grades, subjects, adminCompleteness = 0,
   employmentLinks = [], pendingPermissions = [], onOpenPermissionModal, schoolProfile,
   learningDocumentation = [],
-  hasNewMessages = false, unreadMessageCount = 0
+  hasNewMessages = false, unreadMessageCount = 0,
+  kktpMap = {}
 }) => {
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -241,7 +243,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     if (!subjects || !grades || students.length === 0) return [];
     return subjects.map((subject) => {
         const subjectId = subject.id;
-        const kkm = subject.kkm;
+        const kkm = kktpMap[subjectId] || subject.kkm; // Use kktpMap value if available
         let totalAverageScore = 0;
         let gradedStudentsCount = 0;
         students.forEach(student => {
