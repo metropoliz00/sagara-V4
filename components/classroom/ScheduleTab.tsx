@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Clock, Save, X, Coffee, GripVertical, Flag, BookOpen, BrainCircuit, Users } from 'lucide-react';
+import { Clock, Save, X, Coffee, GripVertical, Flag, BookOpen, BrainCircuit, Users, Plus, Trash2 } from 'lucide-react';
 import { WEEKDAYS, MOCK_SUBJECTS } from '../../constants';
 import { ScheduleItem } from '../../types';
 
@@ -151,6 +151,22 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, timeSlots, onSave, 
     }
   };
 
+  const handleAddRow = () => {
+    setLocalTimeSlots([...localTimeSlots, '00:00 - 00:00']);
+  };
+
+  const handleRemoveRow = (indexToRemove: number) => {
+    const timeToRemove = localTimeSlots[indexToRemove];
+    
+    // Remove the time slot
+    const newTimeSlots = localTimeSlots.filter((_, index) => index !== indexToRemove);
+    setLocalTimeSlots(newTimeSlots);
+
+    // Remove any schedule items associated with this time slot
+    const newSchedule = localSchedule.filter(item => item.time !== timeToRemove);
+    setLocalSchedule(newSchedule);
+  };
+
   const findItemForCell = (day: string, time: string) => {
     return localSchedule.find(item => item.day === day && item.time === time);
   };
@@ -201,9 +217,14 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, timeSlots, onSave, 
         <div className="flex-1 print-container">
             <div className="flex justify-between items-center mb-4 no-print">
                 <p className="text-sm text-gray-500">Seret & lepas mata pelajaran ke dalam jadwal.</p>
-                <button onClick={handleGlobalSave} disabled={isSaving} className="flex items-center gap-2 bg-indigo-600 text-white font-bold px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 disabled:opacity-50">
-                    <Save size={16} /> {isSaving ? 'Menyimpan...' : 'Simpan Semua Jadwal'}
-                </button>
+                <div className="flex gap-2">
+                    <button onClick={handleAddRow} className="flex items-center gap-2 bg-emerald-600 text-white font-bold px-4 py-2 rounded-lg shadow-md hover:bg-emerald-700">
+                        <Plus size={16} /> Tambah Baris
+                    </button>
+                    <button onClick={handleGlobalSave} disabled={isSaving} className="flex items-center gap-2 bg-indigo-600 text-white font-bold px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 disabled:opacity-50">
+                        <Save size={16} /> {isSaving ? 'Menyimpan...' : 'Simpan Semua Jadwal'}
+                    </button>
+                </div>
             </div>
             <div className="hidden print-only text-center mb-6">
                 <h2 className="text-xl font-bold uppercase">JADWAL PELAJARAN</h2>
@@ -222,14 +243,23 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, timeSlots, onSave, 
                     <tbody>
                         {localTimeSlots.map((time, index) => (
                             <tr key={index}>
-                                <td className="p-1 border text-center font-semibold text-gray-600 bg-gray-50 print:bg-white">
-                                    <input 
-                                        type="text" 
-                                        value={time}
-                                        onChange={(e) => handleTimeChange(index, e.target.value)}
-                                        className="w-full text-center font-semibold text-gray-600 bg-gray-50 outline-none focus:bg-white focus:ring-1 focus:ring-indigo-500 rounded p-1 print:bg-transparent print:p-0 print:border-none no-print"
-                                        aria-label={`Edit time slot ${index + 1}`}
-                                    />
+                                <td className="p-1 border text-center font-semibold text-gray-600 bg-gray-50 print:bg-white relative group">
+                                    <div className="flex items-center justify-center gap-1">
+                                        <input 
+                                            type="text" 
+                                            value={time}
+                                            onChange={(e) => handleTimeChange(index, e.target.value)}
+                                            className="w-full text-center font-semibold text-gray-600 bg-gray-50 outline-none focus:bg-white focus:ring-1 focus:ring-indigo-500 rounded p-1 print:bg-transparent print:p-0 print:border-none no-print"
+                                            aria-label={`Edit time slot ${index + 1}`}
+                                        />
+                                        <button 
+                                            onClick={() => handleRemoveRow(index)}
+                                            className="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity no-print"
+                                            title="Hapus Baris"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
                                     <span className="hidden print:inline">{time}</span>
                                 </td>
                                 {WEEKDAYS.map(day => {

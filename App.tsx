@@ -518,7 +518,21 @@ const App: React.FC = () => {
   const handleDeleteSchoolAsset = async (id: string) => { if (isDemoMode) { setSchoolAssets(prev => prev.filter(a => a.id !== id)); handleShowNotification('Data aset dihapus (Demo).', 'success'); return; } await apiService.deleteSchoolAsset(id); handleShowNotification('Data sarana prasarana berhasil dihapus!', 'success'); await fetchData(); };
   
   // Book Loans
-  const handleSaveBookLoan = async (loan: BookLoan) => { if (isDemoMode) { setBookLoans(prev => { const exists = prev.find(l => l.id === loan.id); if (exists) return prev.map(l => l.id === loan.id ? loan : l); return [loan, ...prev]; }); handleShowNotification('Data peminjaman disimpan (Demo).', 'success'); return; } await apiService.saveBookLoan(loan); handleShowNotification('Data peminjaman berhasil disimpan.', 'success'); await fetchData(); };
+  const handleSaveBookLoan = async (loan: BookLoan) => {
+    const actionMsg = loan.status === 'Dipinjam' ? 'dipinjam' : 'dikembalikan';
+    if (isDemoMode) {
+      setBookLoans(prev => {
+        const exists = prev.find(l => l.id === loan.id);
+        if (exists) return prev.map(l => l.id === loan.id ? loan : l);
+        return [loan, ...prev];
+      });
+      handleShowNotification(`Buku berhasil ${actionMsg} (Demo).`, 'success');
+      return;
+    }
+    await apiService.saveBookLoan(loan);
+    handleShowNotification(`Buku berhasil ${actionMsg}.`, 'success');
+    await fetchData();
+  };
   const handleDeleteBookLoan = async (id: string) => { showConfirm('Hapus data peminjaman ini?', async () => { if (isDemoMode) { setBookLoans(prev => prev.filter(l => l.id !== id)); handleShowNotification('Data peminjaman dihapus (Demo).', 'success'); return; } await apiService.deleteBookLoan(id); handleShowNotification('Data peminjaman berhasil dihapus!', 'success'); await fetchData(); }); };
 
   const fetchData = async () => {

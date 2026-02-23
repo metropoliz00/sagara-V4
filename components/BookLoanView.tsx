@@ -58,7 +58,7 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
     if (classId) {
       fetchInventory();
     }
-  }, [classId]);
+  }, [classId, bookLoans]);
 
   // Use all subjects (10 items)
   const subjects = MOCK_SUBJECTS;
@@ -87,18 +87,23 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
   }, [bookLoans, searchTerm, filterStatus, classId]);
 
   const handleToggleBook = (bookName: string) => {
-    setSelectedBooks(prev => 
-      prev.includes(bookName) 
+    setSelectedBooks(prev => {
+      const newSelection = prev.includes(bookName) 
         ? prev.filter(b => b !== bookName) 
-        : [...prev, bookName]
-    );
+        : [...prev, bookName];
+      setQty(newSelection.length > 0 ? newSelection.length : 1);
+      return newSelection;
+    });
   };
 
   const handleSelectAllBooks = () => {
     if (selectedBooks.length === subjects.length) {
       setSelectedBooks([]);
+      setQty(1);
     } else {
-      setSelectedBooks(subjects.map(s => s.name));
+      const allBooks = subjects.map(s => s.name);
+      setSelectedBooks(allBooks);
+      setQty(allBooks.length);
     }
   };
 
@@ -231,11 +236,6 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
     };
 
     await onSaveLoan(newLoan);
-    
-    // Refetch inventory to get updated stock
-    const updatedInventory = await apiService.getBookInventory(classId);
-    setInventory(updatedInventory);
-
     resetForm();
   };
 
@@ -246,19 +246,10 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
       notes: loan.notes ? `${loan.notes} (Dikembalikan pada ${formatDateIndo(new Date().toISOString())})` : `Dikembalikan pada ${formatDateIndo(new Date().toISOString())}`
     };
     await onSaveLoan(updatedLoan);
-
-    // Refetch inventory to get updated stock
-    const updatedInventory = await apiService.getBookInventory(classId);
-    setInventory(updatedInventory);
   };
 
   const handleDeleteLoanWrapper = async (loan: BookLoan) => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus data peminjaman ini?')) {
-      await onDeleteLoan(loan.id);
-      // Refetch inventory to get updated stock
-      const updatedInventory = await apiService.getBookInventory(classId);
-      setInventory(updatedInventory);
-    }
+    await onDeleteLoan(loan.id);
   };
 
   const resetForm = () => {
@@ -306,9 +297,9 @@ const BookLoanView: React.FC<BookLoanViewProps> = ({
           <button 
             onClick={handleSaveChanges}
             disabled={loadingInventory}
-            className="flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loadingInventory ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            <Save size={16} />
             <span>Simpan Perubahan</span>
           </button>
         </div>
