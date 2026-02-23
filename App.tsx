@@ -1072,15 +1072,15 @@ const App: React.FC = () => {
           setBosTransactions(fBOS as BOSTransaction[]);
       }
 
-      console.log("Fetched Class Config:", fClassConfig);
       const fetchedKktp = fClassConfig?.KKTP || fClassConfig?.kktp;
-      console.log("Processed fetchedKktp:", fetchedKktp);
       if (fetchedKktp && Object.keys(fetchedKktp).length > 0) {
         setKktpMap(fetchedKktp);
+        console.log("KKTP Map set from fetched config:", fetchedKktp);
       } else {
         const defaults: Record<string, number> = {};
         MOCK_SUBJECTS.forEach(s => { defaults[s.id] = s.kkm; });
         setKktpMap(defaults);
+        console.log("KKTP Map set to defaults:", defaults);
       }
       
       const hydratedPermissions = (fPermissions as PermissionRequest[]).map((p: any) => ({

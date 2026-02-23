@@ -246,7 +246,6 @@ const Dashboard: React.FC<DashboardProps> = ({
     return subjects.map((subject) => {
         const subjectId = subject.id;
         const kkm = kktpMap[subjectId] || subject.kkm; // Use kktpMap value if available
-        console.log(`Subject: ${subject.name}, subjectId: ${subjectId}, kktpMap[subjectId]: ${kktpMap[subjectId]}, subject.kkm: ${subject.kkm}, final kkm: ${kkm}`);
         let totalAverageScore = 0;
         let gradedStudentsCount = 0;
         students.forEach(student => {
