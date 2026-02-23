@@ -299,11 +299,14 @@ const StudentPortal: React.FC<StudentPortalProps> = ({
     return "Malam";
   }, [currentDate]);
 
+  const getLocalISODate = (date: Date) => { const y = date.getFullYear(); const m = String(date.getMonth() + 1).padStart(2, '0'); const d = String(date.getDate()).padStart(2, '0'); return `${y}-${m}-${d}`; };
+
   const attendanceStats = useMemo(() => {
     // Filter for current month only
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
+    const todayStr = getLocalISODate(now);
 
     const allRecords = allAttendance.filter((r: any) => {
         const recordDate = new Date(r.date);
@@ -325,7 +328,11 @@ const StudentPortal: React.FC<StudentPortalProps> = ({
     const globalTotal = globalRecords.length || 1;
     const percentage = Math.round((globalPresent / globalTotal) * 100);
 
-    return { percentage, counts, monthName: now.toLocaleString('id-ID', { month: 'long' }) };
+    // Today's status
+    const todayRecord = allAttendance.find((r: any) => String(r.studentId) === String(student.id) && r.date === todayStr);
+    const todayStatus = todayRecord ? todayRecord.status : null;
+
+    return { percentage, counts, monthName: now.toLocaleString('id-ID', { month: 'long' }), todayStatus };
   }, [student, allAttendance]);
 
   const upcomingAgendas = useMemo(() => {
@@ -556,7 +563,7 @@ const StudentPortal: React.FC<StudentPortalProps> = ({
                       <h3 className="font-bold text-gray-800 mb-4 flex items-center">
                           <Activity className="mr-2 text-[#5AB2FF]" size={18}/> Laporan Absensi Bulan {attendanceStats.monthName}
                       </h3>
-                      <div className="grid grid-cols-3 gap-4">
+                      <div className="grid grid-cols-3 gap-4 mb-4">
                           <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl text-center">
                               <span className="text-2xl font-black text-amber-600 block mb-1">{attendanceStats.counts.sick}</span>
                               <span className="text-xs font-bold text-amber-700 uppercase">Sakit</span>
@@ -569,6 +576,24 @@ const StudentPortal: React.FC<StudentPortalProps> = ({
                               <span className="text-2xl font-black text-red-600 block mb-1">{attendanceStats.counts.alpha}</span>
                               <span className="text-xs font-bold text-red-700 uppercase">Alpha</span>
                           </div>
+                      </div>
+                      <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl flex items-center justify-between">
+                          <span className="text-sm font-bold text-gray-700">Status Kehadiran Hari Ini:</span>
+                          <span className={`text-sm font-bold px-3 py-1 rounded-lg ${
+                              attendanceStats.todayStatus === 'present' ? 'bg-emerald-100 text-emerald-700' :
+                              attendanceStats.todayStatus === 'sick' ? 'bg-amber-100 text-amber-700' :
+                              attendanceStats.todayStatus === 'permit' ? 'bg-blue-100 text-blue-700' :
+                              attendanceStats.todayStatus === 'alpha' ? 'bg-red-100 text-red-700' :
+                              attendanceStats.todayStatus === 'dispensation' ? 'bg-purple-100 text-purple-700' :
+                              'bg-gray-200 text-gray-600'
+                          }`}>
+                              {attendanceStats.todayStatus === 'present' ? 'Hadir' :
+                               attendanceStats.todayStatus === 'sick' ? 'Sakit' :
+                               attendanceStats.todayStatus === 'permit' ? 'Izin' :
+                               attendanceStats.todayStatus === 'alpha' ? 'Alpha' :
+                               attendanceStats.todayStatus === 'dispensation' ? 'Dispensasi' :
+                               'Belum Tercatat'}
+                          </span>
                       </div>
                   </div>
                   
