@@ -1261,6 +1261,8 @@ const App: React.FC = () => {
             hasNewMessages={hasNewMessages}
             unreadMessageCount={unreadMessageCount}
             bookLoans={bookLoans}
+            subjects={MOCK_SUBJECTS}
+            kktpMap={kktpMap}
         />;
       case 'learning-documentation':
         if (isStudentRole) { setCurrentView('dashboard'); return null; }
@@ -1566,6 +1568,8 @@ const App: React.FC = () => {
             hasNewMessages={hasNewMessages}
             unreadMessageCount={unreadMessageCount}
             bookLoans={bookLoans}
+            subjects={MOCK_SUBJECTS}
+            kktpMap={kktpMap}
         />;
     }
   };

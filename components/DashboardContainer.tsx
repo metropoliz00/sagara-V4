@@ -6,7 +6,8 @@ import { AlertCircle } from 'lucide-react';
 import { 
     ViewState, Student, AgendaItem, BehaviorLog, GradeRecord, 
     TeacherProfileData, SchoolProfileData, User, Holiday, KarakterAssessment, 
-    EmploymentLink, LiaisonLog, PermissionRequest, InventoryItem, SchoolAsset, BOSTransaction, Extracurricular, LearningDocumentation, BookLoan
+    EmploymentLink, LiaisonLog, PermissionRequest, InventoryItem, SchoolAsset, BOSTransaction, Extracurricular, LearningDocumentation, BookLoan,
+    Subject
 } from '../types';
 import { MOCK_SUBJECTS } from '../constants';
 
@@ -47,6 +48,7 @@ interface DashboardContainerProps {
   unreadMessageCount?: number;
   bookLoans: BookLoan[];
   kktpMap?: Record<string, number>;
+  subjects: Subject[];
 }
 
 const DashboardContainer: React.FC<DashboardContainerProps> = ({
