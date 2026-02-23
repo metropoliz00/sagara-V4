@@ -46,7 +46,7 @@ interface DashboardContainerProps {
   hasNewMessages?: boolean;
   unreadMessageCount?: number;
   bookLoans: BookLoan[];
-  kktpMap: Record<string, number>;
+  kktpMap?: Record<string, number>;
 }
 
 const DashboardContainer: React.FC<DashboardContainerProps> = ({

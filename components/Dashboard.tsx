@@ -29,7 +29,7 @@ interface DashboardProps {
   learningDocumentation?: LearningDocumentation[];
   hasNewMessages?: boolean;
   unreadMessageCount?: number;
-  kktpMap: Record<string, number>;
+  kktpMap?: Record<string, number>;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ 
