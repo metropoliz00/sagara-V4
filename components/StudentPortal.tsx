@@ -134,8 +134,9 @@ const StudentPortal: React.FC<StudentPortalProps> = ({
                       
                       // Load KKTP data
                       let finalKktp: Record<string, number> = {};
-                      if (config.kktp && Object.keys(config.kktp).length > 0) {
-                          finalKktp = config.kktp;
+                      const fetchedKktp = (config as any).KKTP || config.kktp;
+                      if (fetchedKktp && Object.keys(fetchedKktp).length > 0) {
+                          finalKktp = fetchedKktp;
                       } else {
                           // Fallback to MOCK_SUBJECTS if not configured
                           MOCK_SUBJECTS.forEach(s => {

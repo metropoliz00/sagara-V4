@@ -85,7 +85,8 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({
   hasNewMessages = false,
   unreadMessageCount = 0,
   bookLoans,
-  kktpMap
+  kktpMap,
+  subjects
 }) => {
   if (isStudentRole) {
     if (!myStudentData) {
@@ -149,7 +150,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({
       teachingClass={activeClassId}
       onChangeView={onChangeView} 
       grades={grades}
-      subjects={MOCK_SUBJECTS}
+      subjects={subjects}
       adminCompleteness={adminCompleteness}
       employmentLinks={employmentLinks}
       pendingPermissions={pendingPermissions} 

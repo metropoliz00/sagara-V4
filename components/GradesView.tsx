@@ -48,7 +48,8 @@ const GradesView: React.FC<GradesViewProps> = ({
       try {
         const config = await apiService.getClassConfig(classId);
         if (config) {
-           if (config.kktp) setKktpMap(config.kktp);
+           const fetchedKktp = (config as any).KKTP || config.kktp;
+           if (fetchedKktp) setKktpMap(fetchedKktp);
            if (config.settings?.showStudentRecap !== undefined) {
                setShowRecapToStudents(config.settings.showStudentRecap);
            }
@@ -58,7 +59,8 @@ const GradesView: React.FC<GradesViewProps> = ({
         }
         
         // Fill defaults if empty
-        if (!config || !config.kktp || Object.keys(config.kktp).length === 0) {
+        const fetchedKktp = config ? ((config as any).KKTP || config.kktp) : null;
+        if (!fetchedKktp || Object.keys(fetchedKktp).length === 0) {
            const defaults: Record<string, number> = {};
            MOCK_SUBJECTS.forEach((s: Subject) => { defaults[s.id] = s.kkm; });
            setKktpMap(defaults);

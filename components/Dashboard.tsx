@@ -32,6 +32,8 @@ interface DashboardProps {
   kktpMap?: Record<string, number>;
 }
 
+const COLORS = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316', '#14B8A6', '#6366F1', '#84CC16', '#D946EF'];
+
 const Dashboard: React.FC<DashboardProps> = ({ 
   students, agendas, holidays, allAttendanceRecords, 
   teacherName, teachingClass, onChangeView, grades, subjects, adminCompleteness = 0,
@@ -244,6 +246,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     return subjects.map((subject) => {
         const subjectId = subject.id;
         const kkm = kktpMap[subjectId] || subject.kkm; // Use kktpMap value if available
+        console.log(`Subject: ${subject.name}, subjectId: ${subjectId}, kktpMap[subjectId]: ${kktpMap[subjectId]}, subject.kkm: ${subject.kkm}, final kkm: ${kkm}`);
         let totalAverageScore = 0;
         let gradedStudentsCount = 0;
         students.forEach(student => {
@@ -587,7 +590,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                             <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f9fafb' }} />
                             <Bar dataKey="progress" radius={[4, 4, 0, 0]}>
                                 {curriculumProgress.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.classAverage >= entry.kkm ? '#10B981' : '#F59E0B'} />
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                 ))}
                             </Bar>
                         </BarChart>
