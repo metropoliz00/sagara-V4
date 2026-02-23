@@ -30,6 +30,7 @@ import CustomModal from './components/CustomModal';
 import { ViewState, Student, AgendaItem, Extracurricular, BehaviorLog, GradeRecord, TeacherProfileData, SchoolProfileData, User, Holiday, SikapAssessment, KarakterAssessment, EmploymentLink, LearningReport, LiaisonLog, PermissionRequest, LearningJournalEntry, SupportDocument, InventoryItem, SchoolAsset, BOSTransaction, LearningDocumentation, BookLoan } from './types';
 import { MOCK_SUBJECTS, MOCK_STUDENTS, MOCK_EXTRACURRICULARS } from './constants';
 import { apiService } from './services/apiService';
+import { cacheService } from './src/services/cacheService';
 import { Menu, Loader2, RefreshCw, AlertCircle, CheckCircle, WifiOff, ChevronDown, UserCog, LogOut, Filter, Bell, X, XCircle, MessageSquare } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -55,26 +56,26 @@ const App: React.FC = () => {
   });
 
   // State Global
-  const [users, setUsers] = useState<User[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [agendas, setAgendas] = useState<AgendaItem[]>([]);
-  const [extracurriculars, setExtracurriculars] = useState<Extracurricular[]>([]);
-  const [counselingLogs, setCounselingLogs] = useState<BehaviorLog[]>([]);
-  const [grades, setGrades] = useState<GradeRecord[]>([]);
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
-  const [allAttendanceRecords, setAllAttendanceRecords] = useState<any[]>([]);
-  const [sikapAssessments, setSikapAssessments] = useState<SikapAssessment[]>([]);
-  const [karakterAssessments, setKarakterAssessments] = useState<KarakterAssessment[]>([]);
-  const [employmentLinks, setEmploymentLinks] = useState<EmploymentLink[]>([]);
-  const [learningReports, setLearningReports] = useState<LearningReport[]>([]);
-  const [learningDocumentation, setLearningDocumentation] = useState<LearningDocumentation[]>([]);
-  const [liaisonLogs, setLiaisonLogs] = useState<LiaisonLog[]>([]);
-  const [permissionRequests, setPermissionRequests] = useState<PermissionRequest[]>([]); 
-  const [supportDocuments, setSupportDocuments] = useState<SupportDocument[]>([]);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]); 
-  const [schoolAssets, setSchoolAssets] = useState<SchoolAsset[]>([]);
-  const [bosTransactions, setBosTransactions] = useState<BOSTransaction[]>([]); // NEW STATE
-  const [bookLoans, setBookLoans] = useState<BookLoan[]>([]);
+  const [users, setUsers] = useState<User[]>(() => cacheService.get<User[]>('users') || []);
+  const [students, setStudents] = useState<Student[]>(() => cacheService.get<Student[]>('students') || []);
+  const [agendas, setAgendas] = useState<AgendaItem[]>(() => cacheService.get<AgendaItem[]>('agendas') || []);
+  const [extracurriculars, setExtracurriculars] = useState<Extracurricular[]>(() => cacheService.get<Extracurricular[]>('extracurriculars') || []);
+  const [counselingLogs, setCounselingLogs] = useState<BehaviorLog[]>(() => cacheService.get<BehaviorLog[]>('counselingLogs') || []);
+  const [grades, setGrades] = useState<GradeRecord[]>(() => cacheService.get<GradeRecord[]>('grades') || []);
+  const [holidays, setHolidays] = useState<Holiday[]>(() => cacheService.get<Holiday[]>('holidays') || []);
+  const [allAttendanceRecords, setAllAttendanceRecords] = useState<any[]>(() => cacheService.get<any[]>('allAttendanceRecords') || []);
+  const [sikapAssessments, setSikapAssessments] = useState<SikapAssessment[]>(() => cacheService.get<SikapAssessment[]>('sikapAssessments') || []);
+  const [karakterAssessments, setKarakterAssessments] = useState<KarakterAssessment[]>(() => cacheService.get<KarakterAssessment[]>('karakterAssessments') || []);
+  const [employmentLinks, setEmploymentLinks] = useState<EmploymentLink[]>(() => cacheService.get<EmploymentLink[]>('employmentLinks') || []);
+  const [learningReports, setLearningReports] = useState<LearningReport[]>(() => cacheService.get<LearningReport[]>('learningReports') || []);
+  const [learningDocumentation, setLearningDocumentation] = useState<LearningDocumentation[]>(() => cacheService.get<LearningDocumentation[]>('learningDocumentation') || []);
+  const [liaisonLogs, setLiaisonLogs] = useState<LiaisonLog[]>(() => cacheService.get<LiaisonLog[]>('liaisonLogs') || []);
+  const [permissionRequests, setPermissionRequests] = useState<PermissionRequest[]>(() => cacheService.get<PermissionRequest[]>('permissionRequests') || []);
+  const [supportDocuments, setSupportDocuments] = useState<SupportDocument[]>(() => cacheService.get<SupportDocument[]>('supportDocuments') || []);
+  const [inventory, setInventory] = useState<InventoryItem[]>(() => cacheService.get<InventoryItem[]>('inventory') || []);
+  const [schoolAssets, setSchoolAssets] = useState<SchoolAsset[]>(() => cacheService.get<SchoolAsset[]>('schoolAssets') || []);
+  const [bosTransactions, setBosTransactions] = useState<BOSTransaction[]>(() => cacheService.get<BOSTransaction[]>('bosTransactions') || []);
+  const [bookLoans, setBookLoans] = useState<BookLoan[]>(() => cacheService.get<BookLoan[]>('bookLoans') || []);
   const [kktpMap, setKktpMap] = useState<Record<string, number>>({});
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error' | 'warning'} | null>(null);
   
@@ -352,52 +353,90 @@ const App: React.FC = () => {
   
   // -- LEARNING DOCUMENTATION HANDLERS --
   const handleSaveLearningDocumentation = async (doc: Omit<LearningDocumentation, 'id'> | LearningDocumentation) => {
-    if (isDemoMode) {
-      handleShowNotification('Dokumentasi disimpan (Demo).', 'success');
-      return;
-    }
-    await apiService.saveLearningDocumentation(doc);
+    const optimisticId = `ldoc-${Date.now()}`;
+    const newDoc = { ...doc, id: (doc as LearningDocumentation).id || optimisticId } as LearningDocumentation;
+
+    const oldDocs = learningDocumentation;
+    const newDocs = oldDocs.find(d => d.id === newDoc.id)
+      ? oldDocs.map(d => d.id === newDoc.id ? newDoc : d)
+      : [newDoc, ...oldDocs];
+
+    setLearningDocumentation(newDocs);
+    cacheService.set('learningDocumentation', newDocs);
     handleShowNotification('Dokumentasi berhasil disimpan.', 'success');
-    await fetchData();
+
+    if (isDemoMode) return;
+
+    try {
+      await apiService.saveLearningDocumentation(doc);
+      await fetchData(); // Refresh to get server-side IDs
+    } catch (error) {
+      setLearningDocumentation(oldDocs);
+      cacheService.set('learningDocumentation', oldDocs);
+      handleShowNotification('Gagal menyimpan dokumentasi.', 'error');
+    }
   };
 
   const handleDeleteLearningDocumentation = async (id: string) => {
-    showConfirm('Hapus dokumentasi ini?', async () => {
-      if (isDemoMode) {
-        handleShowNotification('Dokumentasi dihapus (Demo).', 'success');
-        return;
-      }
-      await apiService.deleteLearningDocumentation(id, activeClassId);
-      handleShowNotification('Dokumentasi berhasil dihapus!', 'success');
-      await fetchData();
+    showConfirm('Hapus dokumentasi ini?', () => {
+      const oldDocs = learningDocumentation;
+      const newDocs = oldDocs.filter(d => d.id !== id);
+      setLearningDocumentation(newDocs);
+      cacheService.set('learningDocumentation', newDocs);
+      handleShowNotification('Dokumentasi berhasil dihapus.', 'success');
+
+      if (isDemoMode) return;
+
+      apiService.deleteLearningDocumentation(id, activeClassId).catch(() => {
+        setLearningDocumentation(oldDocs);
+        cacheService.set('learningDocumentation', oldDocs);
+        handleShowNotification('Gagal menghapus dokumentasi.', 'error');
+      });
     });
   };
   
   // --- BOS HANDLERS ---
   const handleSaveBOS = async (transaction: BOSTransaction) => {
-    if (isDemoMode) {
-        setBosTransactions(prev => {
-            const exists = prev.find(t => t.id === transaction.id);
-            if (exists) return prev.map(t => t.id === transaction.id ? transaction : t);
-            return [...prev, { ...transaction, id: transaction.id || `bos-${Date.now()}` }];
-        });
-        handleShowNotification('Transaksi BOS disimpan (Demo).', 'success');
-        return;
-    }
-    await apiService.saveBOS(transaction);
+    const optimisticId = `bos-${Date.now()}`;
+    const newTransaction = { ...transaction, id: transaction.id || optimisticId };
+
+    const oldTransactions = bosTransactions;
+    const newTransactions = oldTransactions.find(t => t.id === newTransaction.id)
+      ? oldTransactions.map(t => t.id === newTransaction.id ? newTransaction : t)
+      : [...oldTransactions, newTransaction];
+
+    setBosTransactions(newTransactions);
+    cacheService.set('bosTransactions', newTransactions);
     handleShowNotification('Transaksi BOS berhasil disimpan.', 'success');
-    await fetchData();
+
+    if (isDemoMode) return;
+
+    try {
+      await apiService.saveBOS(transaction);
+      await fetchData(); // Refresh for server-side ID
+    } catch (error) {
+      setBosTransactions(oldTransactions);
+      cacheService.set('bosTransactions', oldTransactions);
+      handleShowNotification('Gagal menyimpan transaksi BOS.', 'error');
+    }
   };
 
   const handleDeleteBOS = async (id: string) => {
-      if (isDemoMode) {
-          setBosTransactions(prev => prev.filter(t => t.id !== id));
-          handleShowNotification('Transaksi BOS dihapus (Demo).', 'success');
-          return;
-      }
-      await apiService.deleteBOS(id);
+    showConfirm('Hapus transaksi BOS ini?', () => {
+      const oldTransactions = bosTransactions;
+      const newTransactions = oldTransactions.filter(t => t.id !== id);
+      setBosTransactions(newTransactions);
+      cacheService.set('bosTransactions', newTransactions);
       handleShowNotification('Transaksi BOS berhasil dihapus.', 'success');
-      await fetchData();
+
+      if (isDemoMode) return;
+
+      apiService.deleteBOS(id).catch(() => {
+        setBosTransactions(oldTransactions);
+        cacheService.set('bosTransactions', oldTransactions);
+        handleShowNotification('Gagal menghapus transaksi BOS.', 'error');
+      });
+    });
   };
 
   // ... (Other handlers unchanged)
@@ -454,28 +493,175 @@ const App: React.FC = () => {
   };
 
   // Add/Update/Delete Student handlers
-  const handleAddStudent = async (student: Omit<Student, 'id'>) => { 
-    const targetClassId = String(activeClassId || student.classId || '1A'); 
+  const handleAddStudent = async (student: Omit<Student, 'id'>) => {
+    const targetClassId = String(activeClassId || student.classId || '1A');
     const studentWithClass = { ...student, classId: targetClassId };
-    if (isDemoMode) { setStudents([...students, { ...studentWithClass, id: Date.now().toString() }]); return; }
-    const res = await apiService.createStudent(studentWithClass);
-    if (res.id) { setStudents([...students, { ...studentWithClass, id: res.id }]); handleShowNotification("Siswa berhasil ditambahkan!", "success"); if (currentUser?.role === 'admin' && !availableClasses.includes(targetClassId.toUpperCase())) setSelectedClassId(targetClassId.toUpperCase()); }
+    const optimisticId = `student-${Date.now()}`;
+    const newStudent = { ...studentWithClass, id: optimisticId };
+
+    const oldStudents = students;
+    const newStudents = [...oldStudents, newStudent];
+    setStudents(newStudents);
+    cacheService.set('students', newStudents);
+    handleShowNotification('Siswa berhasil ditambahkan.', 'success');
+
+    if (isDemoMode) return;
+
+    try {
+      const res = await apiService.createStudent(studentWithClass);
+      if (res.id) {
+        // Replace optimistic ID with server ID
+        setStudents(prev => prev.map(s => s.id === optimisticId ? { ...newStudent, id: res.id } : s));
+        cacheService.set('students', students.map(s => s.id === optimisticId ? { ...newStudent, id: res.id } : s));
+        if (currentUser?.role === 'admin' && !availableClasses.includes(targetClassId.toUpperCase())) {
+          setSelectedClassId(targetClassId.toUpperCase());
+        }
+      } else {
+        throw new Error('No ID returned from server');
+      }
+    } catch (error) {
+      setStudents(oldStudents);
+      cacheService.set('students', oldStudents);
+      handleShowNotification('Gagal menambahkan siswa.', 'error');
+    }
   };
   const handleBatchAddStudents = async (newStudents: Omit<Student, 'id'>[]) => { 
     const batchWithClass = newStudents.map(s => ({ ...s, classId: s.classId || activeClassId || '1A' }));
     if (isDemoMode) { const demoStudents = batchWithClass.map((s, i) => ({ ...s, id: Date.now().toString() + i })); setStudents([...students, ...demoStudents]); return; }
     try { const res = await apiService.createStudentBatch(batchWithClass); if (res.status === 'success') { fetchData(); handleShowNotification(`Berhasil menambahkan ${newStudents.length} siswa!`, 'success'); } } catch (e) { handleShowNotification('Gagal upload batch siswa', 'error'); }
   };
-  const handleUpdateStudent = async (updatedStudent: Student) => { setStudents(students.map(s => s.id === updatedStudent.id ? updatedStudent : s)); if (!isDemoMode) await apiService.updateStudent(updatedStudent); };
-  const handleDeleteStudent = async (id: string) => { showConfirm('Apakah Anda yakin ingin menghapus data siswa ini?', async () => { setStudents(students.filter(s => s.id !== id)); if (!isDemoMode) await apiService.deleteStudent(id); }); };
+  const handleUpdateStudent = async (updatedStudent: Student) => {
+    const oldStudents = students;
+    const newStudents = oldStudents.map(s => s.id === updatedStudent.id ? updatedStudent : s);
+    setStudents(newStudents);
+    cacheService.set('students', newStudents);
+    // No notification for updates to keep UI quiet
+
+    if (isDemoMode) return;
+
+    try {
+      await apiService.updateStudent(updatedStudent);
+    } catch (error) {
+      setStudents(oldStudents);
+      cacheService.set('students', oldStudents);
+      handleShowNotification('Gagal memperbarui data siswa.', 'error');
+    }
+  };
+  const handleDeleteStudent = async (id: string) => {
+    showConfirm('Apakah Anda yakin ingin menghapus data siswa ini?', () => {
+      const oldStudents = students;
+      const newStudents = oldStudents.filter(s => s.id !== id);
+      setStudents(newStudents);
+      cacheService.set('students', newStudents);
+      handleShowNotification('Data siswa berhasil dihapus.', 'success');
+
+      if (isDemoMode) return;
+
+      apiService.deleteStudent(id).catch(() => {
+        setStudents(oldStudents);
+        cacheService.set('students', oldStudents);
+        handleShowNotification('Gagal menghapus data siswa.', 'error');
+      });
+    });
+  };
 
   // Agendas & Extras
-  const handleAddAgenda = async (newItem: AgendaItem) => { const agendaWithClass = { ...newItem, classId: activeClassId }; setAgendas([agendaWithClass, ...agendas]); if (!isDemoMode) await apiService.createAgenda(agendaWithClass); };
-  const handleToggleAgenda = async (id: string) => { const updatedAgendas = agendas.map(item => item.id === id ? { ...item, completed: !item.completed } : item); setAgendas(updatedAgendas); if (!isDemoMode) { const item = updatedAgendas.find(a => a.id === id); if(item) await apiService.updateAgenda(item); } };
-  const handleDeleteAgenda = async (id: string) => { showConfirm('Hapus agenda ini?', async () => { setAgendas(agendas.filter(item => item.id !== id)); if (!isDemoMode) await apiService.deleteAgenda(id); }); };
-  const handleAddExtracurricular = async (item: Extracurricular) => { const itemWithClass = { ...item, classId: activeClassId }; setExtracurriculars(prev => [...prev, itemWithClass]); if (!isDemoMode) { await apiService.createExtracurricular(itemWithClass); handleShowNotification("Ekskul berhasil ditambahkan", 'success'); } };
+  const handleAddAgenda = async (newItem: AgendaItem) => {
+    const agendaWithClass = { ...newItem, classId: activeClassId };
+    const optimisticId = `agenda-${Date.now()}`;
+    const newAgenda = { ...agendaWithClass, id: optimisticId };
+
+    const oldAgendas = agendas;
+    const newAgendas = [newAgenda, ...oldAgendas];
+    setAgendas(newAgendas);
+    cacheService.set('agendas', newAgendas);
+
+    if (isDemoMode) return;
+
+    try {
+      await apiService.createAgenda(agendaWithClass);
+      await fetchData(); // Refresh to get server-side IDs
+    } catch (error) {
+      setAgendas(oldAgendas);
+      cacheService.set('agendas', oldAgendas);
+      handleShowNotification('Gagal menyimpan agenda.', 'error');
+    }
+  };
+  const handleToggleAgenda = async (id: string) => {
+    const oldAgendas = agendas;
+    const newAgendas = oldAgendas.map(item => item.id === id ? { ...item, completed: !item.completed } : item);
+    setAgendas(newAgendas);
+    cacheService.set('agendas', newAgendas);
+
+    if (isDemoMode) return;
+
+    const toggledItem = newAgendas.find(a => a.id === id);
+    if (toggledItem) {
+      try {
+        await apiService.updateAgenda(toggledItem);
+      } catch (error) {
+        setAgendas(oldAgendas);
+        cacheService.set('agendas', oldAgendas);
+        handleShowNotification('Gagal memperbarui status agenda.', 'error');
+      }
+    }
+  };
+  const handleDeleteAgenda = (id: string) => {
+    showConfirm('Hapus agenda ini?', () => {
+      const oldAgendas = agendas;
+      const newAgendas = oldAgendas.filter(item => item.id !== id);
+      setAgendas(newAgendas);
+      cacheService.set('agendas', newAgendas);
+
+      if (isDemoMode) return;
+
+      apiService.deleteAgenda(id).catch(() => {
+        setAgendas(oldAgendas);
+        cacheService.set('agendas', oldAgendas);
+        handleShowNotification('Gagal menghapus agenda.', 'error');
+      });
+    });
+  };
+  const handleAddExtracurricular = async (item: Extracurricular) => {
+    const itemWithClass = { ...item, classId: activeClassId };
+    const optimisticId = `extra-${Date.now()}`;
+    const newExtra = { ...itemWithClass, id: optimisticId };
+
+    const oldExtras = extracurriculars;
+    const newExtras = [...oldExtras, newExtra];
+    setExtracurriculars(newExtras);
+    cacheService.set('extracurriculars', newExtras);
+    handleShowNotification('Ekskul berhasil ditambahkan', 'success');
+
+    if (isDemoMode) return;
+
+    try {
+      await apiService.createExtracurricular(itemWithClass);
+      await fetchData(); // Refresh to get server-side IDs
+    } catch (error) {
+      setExtracurriculars(oldExtras);
+      cacheService.set('extracurriculars', oldExtras);
+      handleShowNotification('Gagal menambahkan ekskul.', 'error');
+    }
+  };
   // FIX: Use `updatedItem` which is passed as an argument, instead of `editingActivity` which is not defined in this scope.
-  const handleUpdateExtracurricular = async (updatedItem: Extracurricular) => { const itemWithClass = { ...updatedItem, classId: updatedItem.classId || activeClassId }; setExtracurriculars(prev => prev.map(ex => ex.id === itemWithClass.id ? itemWithClass : ex)); if(!isDemoMode) await apiService.updateExtracurricular(itemWithClass); };
+  const handleUpdateExtracurricular = async (updatedItem: Extracurricular) => {
+    const itemWithClass = { ...updatedItem, classId: updatedItem.classId || activeClassId };
+    const oldExtras = extracurriculars;
+    const newExtras = oldExtras.map(ex => ex.id === itemWithClass.id ? itemWithClass : ex);
+    setExtracurriculars(newExtras);
+    cacheService.set('extracurriculars', newExtras);
+
+    if (isDemoMode) return;
+
+    try {
+      await apiService.updateExtracurricular(itemWithClass);
+    } catch (error) {
+      setExtracurriculars(oldExtras);
+      cacheService.set('extracurriculars', oldExtras);
+      handleShowNotification('Gagal memperbarui ekskul.', 'error');
+    }
+  };
   
   // General & Logs
   const handleSaveGrade = async (studentId: string, subjectId: string, gradeData: any, classId: string) => { if(!isDemoMode) await apiService.saveGrade(studentId, subjectId, gradeData, classId); };
@@ -490,18 +676,152 @@ const App: React.FC = () => {
   const handleSaveKarakter = async (studentId: string, assessment: Omit<KarakterAssessment, 'studentId' | 'classId'>) => { setKarakterAssessments(prev => { const existing = prev.find(a => a.studentId === studentId); if (existing) return prev.map(a => a.studentId === studentId ? { ...existing, ...assessment } : a); return [...prev, { studentId, classId: activeClassId, ...assessment }]; }); if (!isDemoMode) await apiService.saveKarakterAssessment(studentId, activeClassId, assessment); };
   
   // Accounts
-  const handleAddUserAccount = async (user: Omit<User, 'id'>) => { if (isDemoMode) { const newUser = { ...user, id: `user-${Date.now()}` }; setUsers(prev => [...prev, newUser as User]); handleShowNotification('Akun ditambahkan (Mode Demo).', 'success'); return; } const res = await apiService.saveUser(user as User); if (res.id) { handleShowNotification('Akun baru berhasil dibuat!', 'success'); await fetchData(); } };
+  const handleAddUserAccount = async (user: Omit<User, 'id'>) => {
+    const optimisticId = `user-${Date.now()}`;
+    const newUser = { ...user, id: optimisticId } as User;
+
+    const oldUsers = users;
+    const newUsers = [...oldUsers, newUser];
+    setUsers(newUsers);
+    cacheService.set('users', newUsers);
+    handleShowNotification('Akun berhasil ditambahkan.', 'success');
+
+    if (isDemoMode) return;
+
+    try {
+      const res = await apiService.saveUser(user as User);
+      if (res.id) {
+        setUsers(prev => prev.map(u => u.id === optimisticId ? { ...newUser, id: res.id } : u));
+        cacheService.set('users', users.map(u => u.id === optimisticId ? { ...newUser, id: res.id } : u));
+      } else {
+        throw new Error('No ID returned');
+      }
+    } catch (error) {
+      setUsers(oldUsers);
+      cacheService.set('users', oldUsers);
+      handleShowNotification('Gagal menambahkan akun.', 'error');
+    }
+  };
   const handleBatchAddUserAccount = async (users: Omit<User, 'id'>[]) => { if (isDemoMode) { const newUsers = users.map((u, i) => ({ ...u, id: `user-${Date.now()}-${i}` })); setUsers(prev => [...prev, ...newUsers as User[]]); handleShowNotification('Akun ditambahkan (Mode Demo).', 'success'); return; } await apiService.saveUserBatch(users); handleShowNotification(`Berhasil menambahkan ${users.length} akun!`, 'success'); await fetchData(); };
-  const handleUpdateUserAccount = async (user: User) => { if (isDemoMode) { setUsers(prev => prev.map(u => u.id === user.id ? user : u)); handleShowNotification('Akun diperbarui (Mode Demo).', 'success'); return; } await apiService.saveUser(user); handleShowNotification('Akun berhasil diperbarui!', 'success'); await fetchData(); };
-  const handleDeleteUserAccount = async (id: string) => { if (isDemoMode) { setUsers(prev => prev.filter(u => u.id !== id)); handleShowNotification('Akun dihapus (Mode Demo).', 'success'); return; } await apiService.deleteUser(id); handleShowNotification('Akun berhasil dihapus!', 'success'); await fetchData(); };
+  const handleUpdateUserAccount = async (user: User) => {
+    const oldUsers = users;
+    const newUsers = oldUsers.map(u => u.id === user.id ? user : u);
+    setUsers(newUsers);
+    cacheService.set('users', newUsers);
+
+    if (isDemoMode) return;
+
+    try {
+      await apiService.saveUser(user);
+    } catch (error) {
+      setUsers(oldUsers);
+      cacheService.set('users', oldUsers);
+      handleShowNotification('Gagal memperbarui akun.', 'error');
+    }
+  };
+  const handleDeleteUserAccount = async (id: string) => {
+    showConfirm('Hapus akun ini?', () => {
+      const oldUsers = users;
+      const newUsers = oldUsers.filter(u => u.id !== id);
+      setUsers(newUsers);
+      cacheService.set('users', newUsers);
+      handleShowNotification('Akun berhasil dihapus.', 'success');
+
+      if (isDemoMode) return;
+
+      apiService.deleteUser(id).catch(() => {
+        setUsers(oldUsers);
+        cacheService.set('users', oldUsers);
+        handleShowNotification('Gagal menghapus akun.', 'error');
+      });
+    });
+  };
   
   // Employment Links
-  const handleSaveEmploymentLink = async (link: Omit<EmploymentLink, 'id'> | EmploymentLink) => { if (isDemoMode) { const newLink = { ...link, id: (link as any).id || Date.now().toString() } as EmploymentLink; setEmploymentLinks(prev => { const exists = prev.find(l => l.id === newLink.id); if (exists) return prev.map(l => l.id === newLink.id ? newLink : l); return [...prev, newLink]; }); handleShowNotification('Link disimpan (Demo).', 'success'); return; } await apiService.saveEmploymentLink(link); handleShowNotification('Link berhasil disimpan!', 'success'); await fetchData(); };
-  const handleDeleteEmploymentLink = async (id: string) => { showConfirm('Hapus link ini?', async () => { if (isDemoMode) { setEmploymentLinks(prev => prev.filter(l => l.id !== id)); handleShowNotification('Link dihapus (Demo).', 'success'); return; } await apiService.deleteEmploymentLink(id); handleShowNotification('Link berhasil dihapus!', 'success'); await fetchData(); }); };
+  const handleSaveEmploymentLink = async (link: Omit<EmploymentLink, 'id'> | EmploymentLink) => {
+    const optimisticId = `link-${Date.now()}`;
+    const newLink = { ...link, id: (link as EmploymentLink).id || optimisticId } as EmploymentLink;
+
+    const oldLinks = employmentLinks;
+    const newLinks = oldLinks.find(l => l.id === newLink.id)
+      ? oldLinks.map(l => l.id === newLink.id ? newLink : l)
+      : [...oldLinks, newLink];
+
+    setEmploymentLinks(newLinks);
+    cacheService.set('employmentLinks', newLinks);
+    handleShowNotification('Link berhasil disimpan.', 'success');
+
+    if (isDemoMode) return;
+
+    try {
+      await apiService.saveEmploymentLink(link);
+      await fetchData(); // Refresh for server-side ID
+    } catch (error) {
+      setEmploymentLinks(oldLinks);
+      cacheService.set('employmentLinks', oldLinks);
+      handleShowNotification('Gagal menyimpan link.', 'error');
+    }
+  };
+  const handleDeleteEmploymentLink = async (id: string) => {
+    showConfirm('Hapus link ini?', () => {
+      const oldLinks = employmentLinks;
+      const newLinks = oldLinks.filter(l => l.id !== id);
+      setEmploymentLinks(newLinks);
+      cacheService.set('employmentLinks', newLinks);
+      handleShowNotification('Link berhasil dihapus.', 'success');
+
+      if (isDemoMode) return;
+
+      apiService.deleteEmploymentLink(id).catch(() => {
+        setEmploymentLinks(oldLinks);
+        cacheService.set('employmentLinks', oldLinks);
+        handleShowNotification('Gagal menghapus link.', 'error');
+      });
+    });
+  };
   
   // Learning Reports
-  const handleSaveReport = async (report: Omit<LearningReport, 'id'> | LearningReport) => { if (isDemoMode) { const newReport = { ...report, id: (report as any).id || Date.now().toString() } as LearningReport; setLearningReports(prev => { const exists = prev.find(r => r.id === newReport.id); if (exists) return prev.map(r => r.id === newReport.id ? newReport : r); return [...prev, newReport]; }); handleShowNotification('Laporan disimpan (Demo).', 'success'); return; } await apiService.saveLearningReport(report); handleShowNotification('Laporan berhasil disimpan!', 'success'); await fetchData(); };
-  const handleDeleteReport = async (id: string) => { showConfirm('Hapus laporan ini?', async () => { if (isDemoMode) { setLearningReports(prev => prev.filter(r => r.id !== id)); handleShowNotification('Laporan dihapus (Demo).', 'success'); return; } await apiService.deleteLearningReport(id, activeClassId); handleShowNotification('Laporan berhasil dihapus!', 'success'); await fetchData(); }); };
+  const handleSaveReport = async (report: Omit<LearningReport, 'id'> | LearningReport) => {
+    const optimisticId = `report-${Date.now()}`;
+    const newReport = { ...report, id: (report as LearningReport).id || optimisticId } as LearningReport;
+
+    const oldReports = learningReports;
+    const newReports = oldReports.find(r => r.id === newReport.id)
+      ? oldReports.map(r => r.id === newReport.id ? newReport : r)
+      : [...oldReports, newReport];
+
+    setLearningReports(newReports);
+    cacheService.set('learningReports', newReports);
+    handleShowNotification('Laporan berhasil disimpan.', 'success');
+
+    if (isDemoMode) return;
+
+    try {
+      await apiService.saveLearningReport(report);
+      await fetchData(); // Refresh for server-side ID
+    } catch (error) {
+      setLearningReports(oldReports);
+      cacheService.set('learningReports', oldReports);
+      handleShowNotification('Gagal menyimpan laporan.', 'error');
+    }
+  };
+  const handleDeleteReport = async (id: string) => {
+    showConfirm('Hapus laporan ini?', () => {
+      const oldReports = learningReports;
+      const newReports = oldReports.filter(r => r.id !== id);
+      setLearningReports(newReports);
+      cacheService.set('learningReports', newReports);
+      handleShowNotification('Laporan berhasil dihapus.', 'success');
+
+      if (isDemoMode) return;
+
+      apiService.deleteLearningReport(id, activeClassId).catch(() => {
+        setLearningReports(oldReports);
+        cacheService.set('learningReports', oldReports);
+        handleShowNotification('Gagal menghapus laporan.', 'error');
+      });
+    });
+  };
   
   // Liaison
   const handleSaveLiaison = async (log: Omit<LiaisonLog, 'id'>) => { if (isDemoMode) { const newLog = { ...log, id: Date.now().toString(), status: 'Pending' } as LiaisonLog; setLiaisonLogs(prev => [...prev, newLog]); handleShowNotification('Pesan terkirim (Demo).', 'success'); return; } await apiService.saveLiaisonLog(log); handleShowNotification('Pesan berhasil dikirim!', 'success'); const newLog = { ...log, id: 'temp-' + Date.now(), status: 'Pending' } as LiaisonLog; setLiaisonLogs(prev => [...prev, newLog]); const fetchedLogs = await apiService.getLiaisonLogs(currentUser); setLiaisonLogs(fetchedLogs); };
@@ -511,34 +831,142 @@ const App: React.FC = () => {
   const handleSavePermissionRequest = async (date: string, records: any[]) => { const typeStr = records[0]?.status; const typeLabel = typeStr === 'sick' ? 'Sakit' : typeStr === 'dispensation' ? 'Dispensasi' : 'Ijin'; if (isDemoMode) { handleShowNotification(`Pengajuan ${typeLabel} tersimpan (Demo).`, 'success'); return; } for (const rec of records) { await apiService.savePermissionRequest({ studentId: rec.studentId, classId: rec.classId, date: date, type: rec.status, reason: rec.notes }); } handleShowNotification(`Pengajuan ${typeLabel} dikirim. Menunggu konfirmasi.`, 'success'); const reqs = await apiService.getPermissionRequests(currentUser); setPermissionRequests(reqs); };
 
   // Support Docs
-  const handleSaveSupportDocument = async (doc: Omit<SupportDocument, 'id'> | SupportDocument) => { if (isDemoMode) { const newDoc = { ...doc, id: (doc as any).id || `doc-${Date.now()}` } as SupportDocument; setSupportDocuments(prev => { const exists = prev.find(d => d.id === newDoc.id); if (exists) return prev.map(d => d.id === newDoc.id ? newDoc : d); return [newDoc, ...prev]; }); handleShowNotification('Dokumen disimpan (Demo).', 'success'); return; } await apiService.saveSupportDocument(doc); handleShowNotification('Dokumen berhasil disimpan.', 'success'); await fetchData(); };
-  const handleDeleteSupportDocument = async (id: string) => { showConfirm('Hapus dokumen ini?', async () => { if (isDemoMode) { setSupportDocuments(prev => prev.filter(d => d.id !== id)); handleShowNotification('Dokumen dihapus (Demo).', 'success'); return; } await apiService.deleteSupportDocument(id, activeClassId); handleShowNotification('Dokumen berhasil dihapus!', 'success'); await fetchData(); }); };
+  const handleSaveSupportDocument = async (doc: Omit<SupportDocument, 'id'> | SupportDocument) => {
+    const optimisticId = `sdoc-${Date.now()}`;
+    const newDoc = { ...doc, id: (doc as SupportDocument).id || optimisticId } as SupportDocument;
+
+    const oldDocs = supportDocuments;
+    const newDocs = oldDocs.find(d => d.id === newDoc.id)
+      ? oldDocs.map(d => d.id === newDoc.id ? newDoc : d)
+      : [newDoc, ...oldDocs];
+
+    setSupportDocuments(newDocs);
+    cacheService.set('supportDocuments', newDocs);
+    handleShowNotification('Dokumen berhasil disimpan.', 'success');
+
+    if (isDemoMode) return;
+
+    try {
+      await apiService.saveSupportDocument(doc);
+      await fetchData(); // Refresh for server-side ID
+    } catch (error) {
+      setSupportDocuments(oldDocs);
+      cacheService.set('supportDocuments', oldDocs);
+      handleShowNotification('Gagal menyimpan dokumen.', 'error');
+    }
+  };
+  const handleDeleteSupportDocument = async (id: string) => {
+    showConfirm('Hapus dokumen ini?', () => {
+      const oldDocs = supportDocuments;
+      const newDocs = oldDocs.filter(d => d.id !== id);
+      setSupportDocuments(newDocs);
+      cacheService.set('supportDocuments', newDocs);
+      handleShowNotification('Dokumen berhasil dihapus.', 'success');
+
+      if (isDemoMode) return;
+
+      apiService.deleteSupportDocument(id, activeClassId).catch(() => {
+        setSupportDocuments(oldDocs);
+        cacheService.set('supportDocuments', oldDocs);
+        handleShowNotification('Gagal menghapus dokumen.', 'error');
+      });
+    });
+  };
 
   // School Assets
-  const handleSaveSchoolAsset = async (asset: SchoolAsset) => { if (isDemoMode) { setSchoolAssets(prev => { const exists = prev.find(a => a.id === asset.id); if (exists) return prev.map(a => a.id === asset.id ? asset : a); return [...prev, { ...asset, id: asset.id || `asset-${Date.now()}` }]; }); handleShowNotification('Data aset disimpan (Demo).', 'success'); return; } await apiService.saveSchoolAsset(asset); handleShowNotification('Data sarana prasarana berhasil disimpan.', 'success'); await fetchData(); };
-  const handleDeleteSchoolAsset = async (id: string) => { if (isDemoMode) { setSchoolAssets(prev => prev.filter(a => a.id !== id)); handleShowNotification('Data aset dihapus (Demo).', 'success'); return; } await apiService.deleteSchoolAsset(id); handleShowNotification('Data sarana prasarana berhasil dihapus!', 'success'); await fetchData(); };
+  const handleSaveSchoolAsset = async (asset: SchoolAsset) => {
+    const optimisticId = `asset-${Date.now()}`;
+    const newAsset = { ...asset, id: asset.id || optimisticId };
+
+    const oldAssets = schoolAssets;
+    const newAssets = oldAssets.find(a => a.id === newAsset.id)
+      ? oldAssets.map(a => a.id === newAsset.id ? newAsset : a)
+      : [...oldAssets, newAsset];
+
+    setSchoolAssets(newAssets);
+    cacheService.set('schoolAssets', newAssets);
+    handleShowNotification('Data aset berhasil disimpan.', 'success');
+
+    if (isDemoMode) return;
+
+    try {
+      await apiService.saveSchoolAsset(asset);
+      await fetchData(); // Refresh for server-side ID
+    } catch (error) {
+      setSchoolAssets(oldAssets);
+      cacheService.set('schoolAssets', oldAssets);
+      handleShowNotification('Gagal menyimpan data aset.', 'error');
+    }
+  };
+  const handleDeleteSchoolAsset = async (id: string) => {
+    showConfirm('Hapus data aset ini?', () => {
+      const oldAssets = schoolAssets;
+      const newAssets = oldAssets.filter(a => a.id !== id);
+      setSchoolAssets(newAssets);
+      cacheService.set('schoolAssets', newAssets);
+      handleShowNotification('Data aset berhasil dihapus.', 'success');
+
+      if (isDemoMode) return;
+
+      apiService.deleteSchoolAsset(id).catch(() => {
+        setSchoolAssets(oldAssets);
+        cacheService.set('schoolAssets', oldAssets);
+        handleShowNotification('Gagal menghapus data aset.', 'error');
+      });
+    });
+  };
   
   // Book Loans
   const handleSaveBookLoan = async (loan: BookLoan) => {
     const actionMsg = loan.status === 'Dipinjam' ? 'dipinjam' : 'dikembalikan';
-    if (isDemoMode) {
-      setBookLoans(prev => {
-        const exists = prev.find(l => l.id === loan.id);
-        if (exists) return prev.map(l => l.id === loan.id ? loan : l);
-        return [loan, ...prev];
-      });
-      handleShowNotification(`Buku berhasil ${actionMsg} (Demo).`, 'success');
-      return;
-    }
-    await apiService.saveBookLoan(loan);
-    handleShowNotification(`Buku berhasil ${actionMsg}.`, 'success');
-    await fetchData();
-  };
-  const handleDeleteBookLoan = async (id: string) => { showConfirm('Hapus data peminjaman ini?', async () => { if (isDemoMode) { setBookLoans(prev => prev.filter(l => l.id !== id)); handleShowNotification('Data peminjaman dihapus (Demo).', 'success'); return; } await apiService.deleteBookLoan(id); handleShowNotification('Data peminjaman berhasil dihapus!', 'success'); await fetchData(); }); };
+    const optimisticId = `loan-${Date.now()}`;
+    const newLoan = { ...loan, id: loan.id || optimisticId };
 
-  const fetchData = async () => {
+    const oldLoans = bookLoans;
+    const newLoans = oldLoans.find(l => l.id === newLoan.id)
+      ? oldLoans.map(l => l.id === newLoan.id ? newLoan : l)
+      : [newLoan, ...oldLoans];
+
+    setBookLoans(newLoans);
+    cacheService.set('bookLoans', newLoans);
+    handleShowNotification(`Buku berhasil ${actionMsg}.`, 'success');
+
+    if (isDemoMode) return;
+
+    try {
+      await apiService.saveBookLoan(loan);
+      await fetchData(); // Refresh for server-side ID
+    } catch (error) {
+      setBookLoans(oldLoans);
+      cacheService.set('bookLoans', oldLoans);
+      handleShowNotification('Gagal menyimpan data peminjaman.', 'error');
+    }
+  };
+  const handleDeleteBookLoan = async (id: string) => {
+    showConfirm('Hapus data peminjaman ini?', () => {
+      const oldLoans = bookLoans;
+      const newLoans = oldLoans.filter(l => l.id !== id);
+      setBookLoans(newLoans);
+      cacheService.set('bookLoans', newLoans);
+      handleShowNotification('Data peminjaman berhasil dihapus.', 'success');
+
+      if (isDemoMode) return;
+
+      apiService.deleteBookLoan(id).catch(() => {
+        setBookLoans(oldLoans);
+        cacheService.set('bookLoans', oldLoans);
+        handleShowNotification('Gagal menghapus data peminjaman.', 'error');
+      });
+    });
+  };
+
+  const fetchData = async (forceRefresh = false) => {
     if (!currentUser) return;
-    setLoading(true);
+
+    const isCacheEmpty = !cacheService.get('students');
+    if (isCacheEmpty || forceRefresh) {
+      setLoading(true);
+    }
     setError(null);
     setIsDemoMode(false);
 
@@ -649,126 +1077,34 @@ const App: React.FC = () => {
       } else {
         setKktpMap({});
       }
-
-      if (fClassConfig && fClassConfig.KKTP) {
-        setKktpMap(fClassConfig.KKTP);
-      } else {
-        setKktpMap({});
-      }
-
-      if (fClassConfig && fClassConfig.KKTP) {
-        setKktpMap(fClassConfig.KKTP);
-      } else {
-        setKktpMap({});
-      }
-
-      if (fClassConfig && fClassConfig.KKTP) {
-        setKktpMap(fClassConfig.KKTP);
-      } else {
-        setKktpMap({});
-      }
-
-      if (fClassConfig && fClassConfig.KKTP) {
-        setKktpMap(fClassConfig.KKTP);
-      } else {
-        setKktpMap({});
-      }
-
-      if (fClassConfig && fClassConfig.KKTP) {
-        setKktpMap(fClassConfig.KKTP);
-      } else {
-        setKktpMap({});
-      }
-
-      if (fClassConfig && fClassConfig.KKTP) {
-        setKktpMap(fClassConfig.KKTP);
-      } else {
-        setKktpMap({});
-      }
-
-      if (fClassConfig && fClassConfig.KKTP) {
-        setKktpMap(fClassConfig.KKTP);
-      } else {
-        setKktpMap({});
-      }
-
-      if (fClassConfig && fClassConfig.KKTP) {
-        setKktpMap(fClassConfig.KKTP);
-      } else {
-        setKktpMap({});
-      }
-
-      if (fClassConfig && fClassConfig.KKTP) {
-        setKktpMap(fClassConfig.KKTP);
-      } else {
-        setKktpMap({});
-      }
-
-      if (fClassConfig && fClassConfig.KKTP) {
-        setKktpMap(fClassConfig.KKTP);
-      } else {
-        setKktpMap({});
-      }
-
-      if (fClassConfig && fClassConfig.KKTP) {
-        setKktpMap(fClassConfig.KKTP);
-      } else {
-        setKktpMap({});
-      }
-
-      if (fClassConfig && fClassConfig.KKTP) {
-        setKktpMap(fClassConfig.KKTP);
-      } else {
-        setKktpMap({});
-      }
-
-      if (fClassConfig && fClassConfig.KKTP) {
-        setKktpMap(fClassConfig.KKTP);
-      } else {
-        setKktpMap({});
-      }
-
-      if (fClassConfig && fClassConfig.KKTP) {
-        setKktpMap(fClassConfig.KKTP);
-      } else {
-        setKktpMap({});
-      }
-
-      if (fClassConfig && fClassConfig.KKTP) {
-        setKktpMap(fClassConfig.KKTP);
-      } else {
-        setKktpMap({});
-      }
-
-      if (fClassConfig && fClassConfig.KKTP) {
-        setKktpMap(fClassConfig.KKTP);
-      } else {
-        setKktpMap({});
-      }
-
-      if (fClassConfig && fClassConfig.KKTP) {
-        setKktpMap(fClassConfig.KKTP);
-      } else {
-        setKktpMap({});
-      }
-
-      if (fClassConfig && fClassConfig.KKTP) {
-        setKktpMap(fClassConfig.KKTP);
-      } else {
-        setKktpMap({});
-      }
-
-      if (fClassConfig && fClassConfig.KKTP) {
-        setKktpMap(fClassConfig.KKTP);
-      } else {
-        setKktpMap({});
-      }
       
       const hydratedPermissions = (fPermissions as PermissionRequest[]).map((p: any) => ({
           ...p,
           studentName: (fStudents as Student[]).find((s: Student) => s.id === p.studentId)?.name || 'Siswa Tidak Dikenal'
       }));
       setPermissionRequests(hydratedPermissions);
+
+      // Cache the new data
+      cacheService.set('users', fUsers as User[]);
+      cacheService.set('students', fStudents as Student[]);
+      cacheService.set('agendas', (fAgendas as AgendaItem[]).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      cacheService.set('grades', fGrades as GradeRecord[]);
+      cacheService.set('counselingLogs', (fCounseling as BehaviorLog[]).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      cacheService.set('holidays', (fHolidays as Holiday[]).sort((a,b) => a.date.localeCompare(b.date)));
+      cacheService.set('allAttendanceRecords', fAttendance as any[]);
+      cacheService.set('sikapAssessments', fSikap as SikapAssessment[]);
+      cacheService.set('karakterAssessments', fKarakter as KarakterAssessment[]);
+      cacheService.set('employmentLinks', fLinks as EmploymentLink[]);
+      cacheService.set('learningReports', fReports as LearningReport[]);
+      cacheService.set('learningDocumentation', fLearningDocs as LearningDocumentation[]);
+      cacheService.set('liaisonLogs', fLiaison as LiaisonLog[]);
+      cacheService.set('permissionRequests', hydratedPermissions);
+      cacheService.set('supportDocuments', fSupportDocs as SupportDocument[]);
+      cacheService.set('inventory', fInventory as InventoryItem[]);
+      cacheService.set('schoolAssets', fSchoolAssets as SchoolAsset[]);
+      cacheService.set('bosTransactions', fBOS as BOSTransaction[]);
+      cacheService.set('bookLoans', fBookLoans as BookLoan[]);
+      cacheService.set('extracurriculars', fExtracurriculars as Extracurricular[]);
       
       if (fExtracurriculars) {
           setExtracurriculars(fExtracurriculars as Extracurricular[]);
@@ -1329,7 +1665,7 @@ const App: React.FC = () => {
                  <WifiOff size={14} className="mr-1.5" /> Offline Mode
                </div>
              )}
-             <button onClick={fetchData} className="p-2 text-gray-400 hover:text-[#5AB2FF] rounded-full hover:bg-[#CAF4FF]/50" title="Refresh Data">
+             <button onClick={() => fetchData(true)} className="p-2 text-gray-400 hover:text-[#5AB2FF] rounded-full hover:bg-[#CAF4FF]/50" title="Refresh Data">
                <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
              </button>
 
