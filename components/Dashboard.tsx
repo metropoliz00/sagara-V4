@@ -107,34 +107,46 @@ const Dashboard: React.FC<DashboardProps> = ({
   const attendanceTrendData = useMemo(() => {
     const daysShort = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
     const today = new Date();
+    const todayStr = getLocalISODate(today);
     const dayOfWeek = today.getDay(); 
     const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
     const monday = new Date(today);
     monday.setDate(today.getDate() + diffToMonday);
     monday.setHours(0, 0, 0, 0);
     const weekData = [];
-    const totalClassStudents = students.length > 0 ? students.length : 1; // Avoid division by zero
 
     for (let i = 0; i < 6; i++) { // Monday to Saturday
       const targetDate = new Date(monday);
       targetDate.setDate(monday.getDate() + i);
       const dateStr = getLocalISODate(targetDate);
-      const dayRecords = classAttendanceRecords.filter(r => r.date === dateStr);
       
-      const presentCount = new Set(dayRecords.filter(r => r.status === 'present').map(r => r.studentId)).size;
-      const sickCount = new Set(dayRecords.filter(r => r.status === 'sick').map(r => r.studentId)).size;
-      const permitCount = new Set(dayRecords.filter(r => r.status === 'permit').map(r => r.studentId)).size;
-      const alphaCount = new Set(dayRecords.filter(r => r.status === 'alpha').map(r => r.studentId)).size;
+      let presentCount = 0;
+      let sickCount = 0;
+      let permitCount = 0;
+      let alphaCount = 0;
 
-      // Calculate percentage based on total students.
-      const sickPercent = Math.round((sickCount / totalClassStudents) * 100);
-      const permitPercent = Math.round((permitCount / totalClassStudents) * 100);
-      const alphaPercent = Math.round((alphaCount / totalClassStudents) * 100);
-      const presentPercent = 100 - (sickPercent + permitPercent + alphaPercent);
+      if (dateStr <= todayStr) {
+        const dayRecords = classAttendanceRecords.filter(r => r.date === dateStr);
+        presentCount = new Set(dayRecords.filter(r => r.status === 'present').map(r => r.studentId)).size;
+        sickCount = new Set(dayRecords.filter(r => r.status === 'sick').map(r => r.studentId)).size;
+        permitCount = new Set(dayRecords.filter(r => r.status === 'permit').map(r => r.studentId)).size;
+        
+        const recordedCount = presentCount + sickCount + permitCount;
+        alphaCount = students.length - recordedCount;
+        if (alphaCount < 0) alphaCount = 0;
+      }
+
+      const total = presentCount + sickCount + permitCount + alphaCount;
+      const divisor = total > 0 ? total : 1;
+
+      const presentPercent = Math.round((presentCount / divisor) * 100);
+      const sickPercent = Math.round((sickCount / divisor) * 100);
+      const permitPercent = Math.round((permitCount / divisor) * 100);
+      const alphaPercent = total > 0 ? 100 - (presentPercent + sickPercent + permitPercent) : 0;
 
       weekData.push({
         name: daysShort[targetDate.getDay()],
-        H: totalClassStudents - (sickCount + permitCount + alphaCount),
+        H: presentCount,
         S: sickCount,
         I: permitCount,
         A: alphaCount,
@@ -168,11 +180,11 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const monthlyLineChartData = useMemo(() => {
     const now = new Date();
+    const todayStr = getLocalISODate(now);
     const year = now.getFullYear();
     const month = now.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const data = [];
-    const totalClassStudents = students.length > 0 ? students.length : 1;
 
     const monthlyRecords = classAttendanceRecords.filter(record => {
         const recordDate = new Date(record.date + 'T00:00:00');
@@ -181,17 +193,32 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     for (let i = 1; i <= daysInMonth; i++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-        const dayRecords = monthlyRecords.filter(r => r.date === dateStr);
+        const targetDate = new Date(dateStr + 'T00:00:00');
+        const isSunday = targetDate.getDay() === 0;
         
-        const presentCount = new Set(dayRecords.filter(r => r.status === 'present').map(r => r.studentId)).size;
-        const sickCount = new Set(dayRecords.filter(r => r.status === 'sick').map(r => r.studentId)).size;
-        const permitCount = new Set(dayRecords.filter(r => r.status === 'permit').map(r => r.studentId)).size;
-        const alphaCount = new Set(dayRecords.filter(r => r.status === 'alpha').map(r => r.studentId)).size;
+        let presentCount = 0;
+        let sickCount = 0;
+        let permitCount = 0;
+        let alphaCount = 0;
 
-        const sickPercent = Math.round((sickCount / totalClassStudents) * 100);
-        const permitPercent = Math.round((permitCount / totalClassStudents) * 100);
-        const alphaPercent = Math.round((alphaCount / totalClassStudents) * 100);
-        const presentPercent = 100 - (sickPercent + permitPercent + alphaPercent);
+        if (dateStr <= todayStr && !isSunday) {
+            const dayRecords = monthlyRecords.filter(r => r.date === dateStr);
+            presentCount = new Set(dayRecords.filter(r => r.status === 'present').map(r => r.studentId)).size;
+            sickCount = new Set(dayRecords.filter(r => r.status === 'sick').map(r => r.studentId)).size;
+            permitCount = new Set(dayRecords.filter(r => r.status === 'permit').map(r => r.studentId)).size;
+            
+            const recordedCount = presentCount + sickCount + permitCount;
+            alphaCount = students.length - recordedCount;
+            if (alphaCount < 0) alphaCount = 0;
+        }
+
+        const total = presentCount + sickCount + permitCount + alphaCount;
+        const divisor = total > 0 ? total : 1;
+
+        const presentPercent = Math.round((presentCount / divisor) * 100);
+        const sickPercent = Math.round((sickCount / divisor) * 100);
+        const permitPercent = Math.round((permitCount / divisor) * 100);
+        const alphaPercent = total > 0 ? 100 - (presentPercent + sickPercent + permitPercent) : 0;
 
         data.push({
             name: `${i}`,
@@ -199,7 +226,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             Sakit: sickPercent,
             Izin: permitPercent,
             Alpha: alphaPercent,
-            rawH: totalClassStudents - (sickCount + permitCount + alphaCount),
+            rawH: presentCount,
             rawS: sickCount,
             rawI: permitCount,
             rawA: alphaCount
