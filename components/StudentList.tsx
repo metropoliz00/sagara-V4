@@ -8,7 +8,7 @@ import {
   AlertTriangle, UserCircle, Trash2, X, FileSpreadsheet, Printer, Upload, Download,
   LayoutGrid, List as ListIcon,
   Image as ImageIcon, PieChart as PieChartIcon,
-  QrCode as QrCodeIcon
+  QrCode as QrCodeIcon, Users
 } from 'lucide-react';
 import { useModal } from '../context/ModalContext';
 
@@ -33,7 +33,7 @@ interface StudentListProps {
 }
 
 type TabType = 'biodata' | 'health' | 'talents' | 'economy' | 'records';
-type ViewType = 'grid' | 'list' | 'dashboard' | 'qr-codes';
+type ViewType = 'grid' | 'list' | 'dashboard' | 'qr-codes' | 'health-data' | 'parent-data' | 'talents-data';
 
 const StudentList: React.FC<StudentListProps> = ({ 
   students, teacherProfile, schoolProfile, classId,
@@ -84,61 +84,149 @@ const StudentList: React.FC<StudentListProps> = ({
   const isPhotoError = (url?: string) => url && (url.startsWith('ERROR') || url.startsWith('error'));
 
   const handlePrint = () => {
-    const tableRows = filteredStudents.map((s, index) => `
-      <tr style="background-color: ${index % 2 === 0 ? '#f8f9fa' : '#ffffff'}; line-height: 1;">
-        <td style="text-align: center;">${index + 1}</td>
-        <td>${s.name}</td>
-        <td>${s.nis}</td>
-        <td>${s.nisn || '-'}</td>
-        <td style="text-align: center;">${s.gender}</td>
-        <td>${s.birthPlace || '-'}</td>
-        <td>${s.birthDate}</td>
-        <td>${s.religion || '-'}</td>
-        <td>${s.fatherName || '-'}</td>
-        <td>${s.motherName || '-'}</td>
-        <td>${s.address}</td>
-      </tr>
-    `).join('');
+    let title = "DAFTAR SISWA";
+    let headers = "";
+    let rows = "";
+
+    if (viewType === 'health-data') {
+      title = "DATA KESEHATAN";
+      headers = `
+        <tr>
+          <th>No</th>
+          <th>NIS</th>
+          <th>Nama</th>
+          <th>Berat (kg)</th>
+          <th>Tinggi (cm)</th>
+          <th>Riwayat Penyakit</th>
+        </tr>
+      `;
+      rows = filteredStudents.map((s, index) => `
+        <tr style="background-color: ${index % 2 === 0 ? '#f8f9fa' : '#ffffff'};">
+          <td style="text-align: center;">${index + 1}</td>
+          <td style="text-align: center;">${s.nis}</td>
+          <td>${s.name}</td>
+          <td style="text-align: center;">${s.weight || '-'}</td>
+          <td style="text-align: center;">${s.height || '-'}</td>
+          <td>${s.healthNotes || '-'}</td>
+        </tr>
+      `).join('');
+    } else if (viewType === 'parent-data') {
+      title = "DATA ORANG TUA";
+      headers = `
+        <tr>
+          <th>No</th>
+          <th>NIS</th>
+          <th>Nama</th>
+          <th>Nama Ayah</th>
+          <th>Pendidikan Ayah</th>
+          <th>Pekerjaan Ayah</th>
+          <th>Nama Ibu</th>
+          <th>Pendidikan Ibu</th>
+          <th>Pekerjaan Ibu</th>
+          <th>Alamat</th>
+        </tr>
+      `;
+      rows = filteredStudents.map((s, index) => `
+        <tr style="background-color: ${index % 2 === 0 ? '#f8f9fa' : '#ffffff'};">
+          <td style="text-align: center;">${index + 1}</td>
+          <td style="text-align: center;">${s.nis}</td>
+          <td>${s.name}</td>
+          <td>${s.fatherName || '-'}</td>
+          <td>${s.fatherEducation || '-'}</td>
+          <td>${s.fatherJob || '-'}</td>
+          <td>${s.motherName || '-'}</td>
+          <td>${s.motherEducation || '-'}</td>
+          <td>${s.motherJob || '-'}</td>
+          <td>${s.address}</td>
+        </tr>
+      `).join('');
+    } else if (viewType === 'talents-data') {
+      title = "DATA BAKAT MINAT";
+      headers = `
+        <tr>
+          <th>No</th>
+          <th>NIS</th>
+          <th>NISN</th>
+          <th>Nama</th>
+          <th>Tempat Lahir</th>
+          <th>Tanggal Lahir</th>
+          <th>Hobi</th>
+          <th>Cita-cita</th>
+        </tr>
+      `;
+      rows = filteredStudents.map((s, index) => `
+        <tr style="background-color: ${index % 2 === 0 ? '#f8f9fa' : '#ffffff'};">
+          <td style="text-align: center;">${index + 1}</td>
+          <td style="text-align: center;">${s.nis}</td>
+          <td style="text-align: center;">${s.nisn || '-'}</td>
+          <td>${s.name}</td>
+          <td>${s.birthPlace || '-'}</td>
+          <td style="text-align: center;">${s.birthDate}</td>
+          <td>${s.hobbies || '-'}</td>
+          <td>${s.ambition || '-'}</td>
+        </tr>
+      `).join('');
+    } else {
+      // Default list view
+      headers = `
+        <tr>
+          <th>No</th>
+          <th>Nama</th>
+          <th>NIS</th>
+          <th>NISN</th>
+          <th>L/P</th>
+          <th>Tempat Lahir</th>
+          <th>Tanggal Lahir</th>
+          <th>Agama</th>
+          <th>Nama Ayah</th>
+          <th>Nama Ibu</th>
+          <th>Alamat</th>
+        </tr>
+      `;
+      rows = filteredStudents.map((s, index) => `
+        <tr style="background-color: ${index % 2 === 0 ? '#f8f9fa' : '#ffffff'};">
+          <td style="text-align: center;">${index + 1}</td>
+          <td>${s.name}</td>
+          <td>${s.nis}</td>
+          <td>${s.nisn || '-'}</td>
+          <td style="text-align: center;">${s.gender}</td>
+          <td>${s.birthPlace || '-'}</td>
+          <td>${s.birthDate}</td>
+          <td>${s.religion || '-'}</td>
+          <td>${s.fatherName || '-'}</td>
+          <td>${s.motherName || '-'}</td>
+          <td>${s.address}</td>
+        </tr>
+      `).join('');
+    }
 
     const printContent = `
-      <div style="text-align: center; margin-bottom: 20px;">
-        <h2 style="margin: 0;">DAFTAR SISWA</h2>
-        <h3 style="margin: 0;">KELAS: ${classId}</h3>
-        <h4 style="margin: 0;">TAHUN AJARAN: ${schoolProfile?.year || new Date().getFullYear()}</h4>
+      <div style="text-align: center; margin-bottom: 20px; line-height: 1;">
+        <h2 style="margin: 0; text-transform: uppercase;">${title}</h2>
+        <h3 style="margin: 5px 0 0 0;">KELAS: ${classId}</h3>
+        <h4 style="margin: 5px 0 0 0;">TAHUN AJARAN: ${schoolProfile?.year || new Date().getFullYear()}</h4>
       </div>
       <table>
         <thead style="background-color: #e9ecef;">
-          <tr>
-            <th>No</th>
-            <th>Nama</th>
-            <th>NIS</th>
-            <th>NISN</th>
-            <th>L/P</th>
-            <th>Tempat Lahir</th>
-            <th>Tanggal Lahir</th>
-            <th>Agama</th>
-            <th>Nama Ayah</th>
-            <th>Nama Ibu</th>
-            <th>Alamat</th>
-          </tr>
+          ${headers}
         </thead>
         <tbody>
-          ${tableRows}
+          ${rows}
         </tbody>
       </table>
-      <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 12px;">
+      <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 12px; line-height: 1;">
         <div style="text-align: center;">
           <p>Mengetahui,</p>
           <p>Kepala ${schoolProfile?.name || 'Sekolah'}</p>
           <br/><br/><br/>
-          <p style="text-decoration: underline;">${schoolProfile?.headmaster || '.........................'}</p>
+          <p style="text-decoration: underline; font-weight: bold;">${schoolProfile?.headmaster || '.........................'}</p>
           <p>NIP. ${schoolProfile?.headmasterNip || '.........................'}</p>
         </div>
         <div style="text-align: center;">
           <p>Remen, ${new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})}</p>
           <p>Guru Kelas ${classId}</p>
           <br/><br/><br/>
-          <p style="text-decoration: underline;">${teacherProfile?.name || '.........................'}</p>
+          <p style="text-decoration: underline; font-weight: bold;">${teacherProfile?.name || '.........................'}</p>
           <p>NIP. ${teacherProfile?.nip || '.........................'}</p>
         </div>
       </div>
@@ -148,13 +236,16 @@ const StudentList: React.FC<StudentListProps> = ({
     newWindow?.document.write(`
       <html>
         <head>
-          <title>Daftar Siswa Kelas ${classId}</title>
+          <title>${title} Kelas ${classId}</title>
           <style>
-            body { font-family: 'Times New Roman', serif; line-height: 1; }
+            body { font-family: 'Times New Roman', serif; line-height: 1; padding: 20px; }
             table { width: 100%; border-collapse: collapse; font-size: 10px; }
             th, td { border: 1px solid black; padding: 4px; text-align: left; }
-            th { text-align: center; }
-            @page { size: A4 landscape; margin: 20mm; }
+            th { text-align: center; background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact; }
+            @page { size: A4 landscape; margin: 10mm; }
+            @media print {
+              th { background-color: #f2f2f2 !important; }
+            }
           </style>
         </head>
         <body>
@@ -439,6 +530,9 @@ const StudentList: React.FC<StudentListProps> = ({
                         <button onClick={() => setViewType('list')} className="p-2 rounded-md transition-all text-gray-400 hover:text-gray-600" title="Tampilan Tabel"><ListIcon size={18} /></button>
                         <button onClick={() => setViewType('grid')} className="p-2 rounded-md transition-all text-gray-400 hover:text-gray-600" title="Tampilan Grid"><LayoutGrid size={18} /></button>
                         <button onClick={() => setViewType('qr-codes')} className="p-2 rounded-md transition-all text-gray-400 hover:text-gray-600" title="QR Code Siswa"><QrCodeIcon size={18} /></button>
+                        <button onClick={() => setViewType('health-data')} className="p-2 rounded-md transition-all text-gray-400 hover:text-gray-600" title="Data Kesehatan"><Heart size={18} /></button>
+                        <button onClick={() => setViewType('parent-data')} className="p-2 rounded-md transition-all text-gray-400 hover:text-gray-600" title="Data Orang Tua"><Users size={18} /></button>
+                        <button onClick={() => setViewType('talents-data')} className="p-2 rounded-md transition-all text-gray-400 hover:text-gray-600" title="Data Bakat Minat"><Activity size={18} /></button>
                     </div>
                 </div>
             </div>
@@ -547,6 +641,9 @@ const StudentList: React.FC<StudentListProps> = ({
               <button onClick={() => setViewType('list')} className={`p-2 rounded-md transition-all ${viewType === 'list' ? 'bg-[#5AB2FF] text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="Tampilan Tabel"><ListIcon size={18} /></button>
               <button onClick={() => setViewType('grid')} className={`p-2 rounded-md transition-all ${viewType === 'grid' ? 'bg-[#5AB2FF] text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="Tampilan Grid"><LayoutGrid size={18} /></button>
               <button onClick={() => setViewType('qr-codes')} className={`p-2 rounded-md transition-all ${viewType === 'qr-codes' ? 'bg-[#5AB2FF] text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="QR Code Siswa"><QrCodeIcon size={18} /></button>
+              <button onClick={() => setViewType('health-data')} className={`p-2 rounded-md transition-all ${viewType === 'health-data' ? 'bg-[#5AB2FF] text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="Data Kesehatan"><Heart size={18} /></button>
+              <button onClick={() => setViewType('parent-data')} className={`p-2 rounded-md transition-all ${viewType === 'parent-data' ? 'bg-[#5AB2FF] text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="Data Orang Tua"><Users size={18} /></button>
+              <button onClick={() => setViewType('talents-data')} className={`p-2 rounded-md transition-all ${viewType === 'talents-data' ? 'bg-[#5AB2FF] text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="Data Bakat Minat"><Activity size={18} /></button>
            </div>
            
            {!isReadOnly && <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".xlsx, .xls, .csv" />}
@@ -640,6 +737,105 @@ const StudentList: React.FC<StudentListProps> = ({
                         </div>
                     ))}
                 </div>
+            </div>
+        ) : viewType === 'health-data' ? (
+            /* HEALTH DATA TABLE VIEW */
+            <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                    <thead className="bg-[#CAF4FF]/50 text-gray-700 font-medium border-b border-[#A0DEFF]">
+                        <tr>
+                            <th className="px-4 py-3">NIS</th>
+                            <th className="px-4 py-3">Nama</th>
+                            <th className="px-4 py-3 text-center">Berat (kg)</th>
+                            <th className="px-4 py-3 text-center">Tinggi (cm)</th>
+                            <th className="px-4 py-3">Riwayat Penyakit</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        {filteredStudents.map((student, index) => (
+                            <tr key={student.id} className={`hover:bg-[#CAF4FF]/20 cursor-pointer ${index % 2 === 0 ? 'bg-white' : 'bg-[#CAF4FF]/10'}`} onClick={() => setSelectedStudent(student)}>
+                                <td className="px-4 py-3 font-mono text-gray-500 whitespace-nowrap">{student.nis}</td>
+                                <td className="px-4 py-3 font-medium flex items-center whitespace-nowrap">
+                                    {student.photo && !isPhotoError(student.photo) && <img src={student.photo} className="w-8 h-8 rounded-full mr-3 object-cover" alt=""/>}
+                                    {student.name}
+                                </td>
+                                <td className="px-4 py-3 text-center font-mono">{student.weight || '-'}</td>
+                                <td className="px-4 py-3 text-center font-mono">{student.height || '-'}</td>
+                                <td className="px-4 py-3 text-gray-600 italic">{student.healthNotes || 'Tidak ada'}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        ) : viewType === 'parent-data' ? (
+            /* PARENT DATA TABLE VIEW */
+            <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                    <thead className="bg-[#CAF4FF]/50 text-gray-700 font-medium border-b border-[#A0DEFF]">
+                        <tr>
+                            <th className="px-4 py-3">NIS</th>
+                            <th className="px-4 py-3">Nama</th>
+                            <th className="px-4 py-3">Nama Ayah</th>
+                            <th className="px-4 py-3">Pendidikan Ayah</th>
+                            <th className="px-4 py-3">Pekerjaan Ayah</th>
+                            <th className="px-4 py-3">Nama Ibu</th>
+                            <th className="px-4 py-3">Pendidikan Ibu</th>
+                            <th className="px-4 py-3">Pekerjaan Ibu</th>
+                            <th className="px-4 py-3">Alamat</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        {filteredStudents.map((student, index) => (
+                            <tr key={student.id} className={`hover:bg-[#CAF4FF]/20 cursor-pointer ${index % 2 === 0 ? 'bg-white' : 'bg-[#CAF4FF]/10'}`} onClick={() => setSelectedStudent(student)}>
+                                <td className="px-4 py-3 font-mono text-gray-500 whitespace-nowrap">{student.nis}</td>
+                                <td className="px-4 py-3 font-medium flex items-center whitespace-nowrap">
+                                    {student.photo && !isPhotoError(student.photo) && <img src={student.photo} className="w-8 h-8 rounded-full mr-3 object-cover" alt=""/>}
+                                    {student.name}
+                                </td>
+                                <td className="px-4 py-3">{student.fatherName || '-'}</td>
+                                <td className="px-4 py-3">{student.fatherEducation || '-'}</td>
+                                <td className="px-4 py-3">{student.fatherJob || '-'}</td>
+                                <td className="px-4 py-3">{student.motherName || '-'}</td>
+                                <td className="px-4 py-3">{student.motherEducation || '-'}</td>
+                                <td className="px-4 py-3">{student.motherJob || '-'}</td>
+                                <td className="px-4 py-3 truncate max-w-[200px]">{student.address}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        ) : viewType === 'talents-data' ? (
+            /* TALENTS DATA TABLE VIEW */
+            <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                    <thead className="bg-[#CAF4FF]/50 text-gray-700 font-medium border-b border-[#A0DEFF]">
+                        <tr>
+                            <th className="px-4 py-3">NIS</th>
+                            <th className="px-4 py-3">NISN</th>
+                            <th className="px-4 py-3">Nama</th>
+                            <th className="px-4 py-3">Tempat Lahir</th>
+                            <th className="px-4 py-3">Tanggal Lahir</th>
+                            <th className="px-4 py-3">Hobi</th>
+                            <th className="px-4 py-3">Cita-cita</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        {filteredStudents.map((student, index) => (
+                            <tr key={student.id} className={`hover:bg-[#CAF4FF]/20 cursor-pointer ${index % 2 === 0 ? 'bg-white' : 'bg-[#CAF4FF]/10'}`} onClick={() => setSelectedStudent(student)}>
+                                <td className="px-4 py-3 font-mono text-gray-500 whitespace-nowrap">{student.nis}</td>
+                                <td className="px-4 py-3 font-mono text-gray-500 whitespace-nowrap">{student.nisn || '-'}</td>
+                                <td className="px-4 py-3 font-medium flex items-center whitespace-nowrap">
+                                    {student.photo && !isPhotoError(student.photo) && <img src={student.photo} className="w-8 h-8 rounded-full mr-3 object-cover" alt=""/>}
+                                    {student.name}
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap">{student.birthPlace || '-'}</td>
+                                <td className="px-4 py-3 whitespace-nowrap">{student.birthDate}</td>
+                                <td className="px-4 py-3">{student.hobbies || '-'}</td>
+                                <td className="px-4 py-3">{student.ambition || '-'}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
         ) : (
            <div className="overflow-x-auto">
