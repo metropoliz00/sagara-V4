@@ -1,6 +1,7 @@
 
 export interface User {
   id: string;
+  schoolId?: string; // Added schoolId
   username: string;
   password?: string;
   role: 'admin' | 'guru' | 'siswa' | 'supervisor';
@@ -187,6 +188,7 @@ export interface SupportDocument {
 
 export interface LearningReport {
   id: string;
+  schoolId: string; // Added schoolId
   classId: string;
   date: string;
   type: 'Jurnal Harian' | 'RPP/Modul Ajar' | 'Dokumentasi' | 'Lainnya';

@@ -97,6 +97,7 @@ const LearningReportsView: React.FC<LearningReportsViewProps> = ({
         topic: '',
         documentLink: '',
         classId,
+        schoolId: '', // Will be populated from user profile in App.tsx
         teacherName: (teachers.length > 0 && teachers[0].fullName && teachers[0].fullName !== 'undefined') ? teachers[0].fullName : '' // Default to first teacher if available
       });
     }

@@ -318,7 +318,10 @@ const App: React.FC = () => {
   const filteredSikap = useMemo(() => sikapAssessments.filter(s => isClassMatch(s.classId, activeClassId)), [sikapAssessments, activeClassId]);
   const filteredKarakter = useMemo(() => karakterAssessments.filter(k => isClassMatch(k.classId, activeClassId)), [karakterAssessments, activeClassId]);
   const filteredHolidays = holidays;
-  const filteredReports = useMemo(() => learningReports.filter(r => isClassMatch(r.classId, activeClassId)), [learningReports, activeClassId]);
+  const filteredReports = useMemo(() => {
+    if (!currentUser?.schoolId) return [];
+    return learningReports.filter(r => r.schoolId === currentUser.schoolId);
+  }, [learningReports, currentUser]);
   const filteredLearningDocumentation = useMemo(() => learningDocumentation.filter(d => isClassMatch(d.classId, activeClassId)), [learningDocumentation, activeClassId]);
   const filteredSupportDocuments = useMemo(() => supportDocuments.filter(d => isClassMatch(d.classId, activeClassId)), [supportDocuments, activeClassId]);
   
@@ -454,7 +457,8 @@ const App: React.FC = () => {
                   const autoReport: LearningReport = {
                       id: `jurnal-${reportDate}-${activeClassId}`, classId: activeClassId, date: reportDate,
                       type: 'Jurnal Harian', subject: uniqueSubjects, topic: combinedTopics || 'Kegiatan Pembelajaran Harian',
-                      documentLink: '', teacherName: (currentUser?.fullName && currentUser?.fullName !== 'undefined') ? currentUser.fullName : 'Guru Kelas'
+                      documentLink: '', teacherName: (currentUser?.fullName && currentUser?.fullName !== 'undefined') ? currentUser.fullName : 'Guru Kelas',
+                      schoolId: currentUser?.schoolId || 'default-school'
                   };
                   await apiService.saveLearningReport(autoReport);
                   const newReports = await apiService.getLearningReports(activeClassId);
@@ -783,7 +787,8 @@ const App: React.FC = () => {
   // Learning Reports
   const handleSaveReport = async (report: Omit<LearningReport, 'id'> | LearningReport) => {
     const optimisticId = `report-${Date.now()}`;
-    const newReport = { ...report, id: (report as LearningReport).id || optimisticId } as LearningReport;
+    const reportWithSchoolId = { ...report, schoolId: currentUser?.schoolId || 'default-school' };
+    const newReport = { ...reportWithSchoolId, id: (report as LearningReport).id || optimisticId } as LearningReport;
 
     const oldReports = learningReports;
     const newReports = oldReports.find(r => r.id === newReport.id)
