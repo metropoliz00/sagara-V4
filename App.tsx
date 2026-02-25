@@ -1412,7 +1412,7 @@ const App: React.FC = () => {
         if (isStudentRole) { setCurrentView('dashboard'); return null; }
         const teachersList = users.filter(u => u.role === 'guru');
         return <LearningReportsView 
-                  reports={filteredReports}
+                  reports={learningReports}
                   subjects={MOCK_SUBJECTS}
                   onSave={handleSaveReport}
                   onDelete={handleDeleteReport}

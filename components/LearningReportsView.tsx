@@ -39,7 +39,7 @@ const LearningReportsView: React.FC<LearningReportsViewProps> = ({
   const [filterType, setFilterType] = useState('all');
 
   // --- ANALYTICS DATA ---
-  // UPDATED: Chart now shows Top 5 Teachers
+  // UPDATED: Chart now shows Top 10 Teachers
   const reportsByTeacher = useMemo(() => {
     const counts: Record<string, number> = {};
     reports.forEach(r => {
@@ -49,7 +49,18 @@ const LearningReportsView: React.FC<LearningReportsViewProps> = ({
     return Object.entries(counts)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
-      .slice(0, 5); // Top 5 Teachers
+      .slice(0, 10); // Top 10 Teachers
+  }, [reports]);
+
+  const reportsByClass = useMemo(() => {
+    const counts: Record<string, number> = {};
+    reports.forEach(r => {
+      const cId = r.classId || 'Umum';
+      counts[cId] = (counts[cId] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
   }, [reports]);
 
   const reportsByType = useMemo(() => {
@@ -163,13 +174,13 @@ const LearningReportsView: React.FC<LearningReportsViewProps> = ({
 
             {/* Charts - UPDATED TITLE & DATA */}
             <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                <h3 className="font-bold text-gray-800 mb-4 flex items-center"><Users size={18} className="mr-2 text-indigo-500"/> Top 5 Guru Teraktif</h3>
-                <div className="h-64">
+                <h3 className="font-bold text-gray-800 mb-4 flex items-center"><Users size={18} className="mr-2 text-indigo-500"/> Perbandingan Guru Teraktif (Top 10)</h3>
+                <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={reportsByTeacher} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                             <XAxis type="number" hide />
-                            <YAxis dataKey="name" type="category" width={120} tick={{fontSize: 12}} />
+                            <YAxis dataKey="name" type="category" width={140} tick={{fontSize: 11}} />
                             <Tooltip />
                             <Bar dataKey="value" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={20} name="Jumlah Laporan" />
                         </BarChart>
@@ -179,10 +190,10 @@ const LearningReportsView: React.FC<LearningReportsViewProps> = ({
 
             <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                 <h3 className="font-bold text-gray-800 mb-4 flex items-center"><PieIcon size={18} className="mr-2 text-pink-500"/> Jenis Laporan</h3>
-                <div className="h-64">
+                <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
-                            <Pie data={reportsByType} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} fill="#8884d8" label>
+                            <Pie data={reportsByType} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} fill="#8884d8" label>
                                 {reportsByType.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                 ))}
@@ -190,6 +201,21 @@ const LearningReportsView: React.FC<LearningReportsViewProps> = ({
                             <Tooltip />
                             <Legend verticalAlign="bottom" height={36}/>
                         </PieChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+
+            <div className="lg:col-span-3 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                <h3 className="font-bold text-gray-800 mb-4 flex items-center"><BookOpen size={18} className="mr-2 text-emerald-500"/> Distribusi Laporan per Kelas</h3>
+                <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={reportsByClass} margin={{ top: 5, right: 30, left: 20, bottom: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="name" tick={{fontSize: 12}} angle={-45} textAnchor="end" height={60} />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]} name="Jumlah Laporan" />
+                        </BarChart>
                     </ResponsiveContainer>
                 </div>
             </div>
@@ -209,7 +235,7 @@ const LearningReportsView: React.FC<LearningReportsViewProps> = ({
                             <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
                                 <div className="flex justify-between items-start mb-1">
                                     <div className="flex flex-col">
-                                        <span className="font-bold text-gray-800 text-sm">{report.subject}</span>
+                                        <span className="font-bold text-gray-800 text-sm">{report.subject} <span className="text-indigo-600 ml-1">(Kelas {report.classId})</span></span>
                                         <span className="text-xs text-gray-500 font-semibold">{(report.teacherName && report.teacherName !== 'undefined') ? report.teacherName : 'Guru'}</span>
                                     </div>
                                     <span className="text-[10px] text-gray-400">{report.date}</span>
@@ -261,6 +287,7 @@ const LearningReportsView: React.FC<LearningReportsViewProps> = ({
                     <thead className="bg-gray-50 text-gray-600 font-medium uppercase text-xs">
                         <tr>
                             <th className="px-6 py-3">Tanggal</th>
+                            <th className="px-6 py-3">Kelas</th>
                             <th className="px-6 py-3">Nama Guru</th>
                             <th className="px-6 py-3">Mata Pelajaran</th>
                             <th className="px-6 py-3">Materi / Topik</th>
@@ -272,6 +299,7 @@ const LearningReportsView: React.FC<LearningReportsViewProps> = ({
                         {filteredReports.map((report) => (
                             <tr key={report.id} className="hover:bg-indigo-50/30 transition-colors">
                                 <td className="px-6 py-4 whitespace-nowrap text-gray-500 font-mono text-xs">{report.date}</td>
+                                <td className="px-6 py-4 font-bold text-indigo-600">{report.classId}</td>
                                 <td className="px-6 py-4 font-semibold text-gray-700">
                         {report.teacherName && report.teacherName !== 'undefined' ? report.teacherName : '-'}
                       </td>
