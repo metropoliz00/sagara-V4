@@ -1536,6 +1536,12 @@ const App: React.FC = () => {
                   data={fullBackupData} 
                   onRestore={handleRestoreData} 
                />;
+      case 'school-bell':
+        if (currentUser.role !== 'admin') {
+          setCurrentView('dashboard');
+          return null;
+        }
+        return <SchoolBell />;
       default:
         // Fallback to Dashboard Container
         return <DashboardContainer
