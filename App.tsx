@@ -99,39 +99,6 @@ const App: React.FC = () => {
     onConfirm: () => {},
   });
 
-  // -- DYNAMIC PAGE TITLE --
-  useEffect(() => {
-    const titleMap: Record<string, string> = {
-      'dashboard': 'Dashboard',
-      'supervisor-overview': 'Overview KS',
-      'pendahuluan': 'Pendahuluan',
-      'students': 'Data Siswa',
-      'attendance': 'Absensi',
-      'grades': 'Nilai & Rapor',
-      'attitude': 'DPL & 7KAIH',
-      'learning-journal': 'Jurnal Pembelajaran',
-      'learning-reports': 'Laporan Pembelajaran',
-      'learning-documentation': 'Dokumentasi Pembelajaran',
-      'student-monitor': 'Monitoring Siswa',
-      'counseling': 'Konseling & Perilaku',
-      'activities': 'Kegiatan & Ekskul',
-      'liaison-book': 'Buku Penghubung',
-      'admin': 'Administrasi Kelas',
-      'book-loan': 'Peminjaman Buku',
-      'school-assets': 'Sarana Prasarana',
-      'school-bell': 'Bel Sekolah',
-      'bos-admin': 'Pengelolaan BOS',
-      'support-docs': 'Bukti Dukung',
-      'profile': 'Profil',
-      'accounts': 'Manajemen Akun',
-      'employment-links': 'Link Kepegawaian',
-      'backup-restore': 'Backup & Restore'
-    };
-
-    const viewLabel = titleMap[currentView] || 'Sistem Akademik';
-    document.title = `${viewLabel} | SAGARA`;
-  }, [currentView]);
-
   const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
   const [hasNewMessages, setHasNewMessages] = useState(false);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
