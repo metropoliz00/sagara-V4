@@ -14,13 +14,15 @@ const fetchApi = async (method: string, body: any = null) => {
     throw new Error("API URL belum dikonfigurasi.");
   }
 
+  const cleanBody = JSON.parse(JSON.stringify(body, (key, value) => value === undefined ? null : value));
+
   const options: RequestInit = {
     method: 'POST',
     redirect: 'follow', // Essential for Google Apps Script Web Apps
     headers: {
       'Content-Type': 'text/plain;charset=utf-8', // Avoids CORS preflight issues
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(cleanBody)
   };
 
   try {

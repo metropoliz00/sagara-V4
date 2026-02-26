@@ -307,7 +307,7 @@ const App: React.FC = () => {
       return allAttendanceRecords.filter(a => {
           if (isClassMatch(a.classId, activeClassId)) return true;
           if (!a.classId || a.classId === 'undefined' || a.classId === 'null') {
-              const student = students.find(s => s.id === a.studentId);
+              const student = students.find(s => String(s.id).trim() === String(a.studentId).trim());
               if (student && isClassMatch(student.classId, activeClassId)) return true;
           }
           return false;
@@ -318,10 +318,7 @@ const App: React.FC = () => {
   const filteredSikap = useMemo(() => sikapAssessments.filter(s => isClassMatch(s.classId, activeClassId)), [sikapAssessments, activeClassId]);
   const filteredKarakter = useMemo(() => karakterAssessments.filter(k => isClassMatch(k.classId, activeClassId)), [karakterAssessments, activeClassId]);
   const filteredHolidays = holidays;
-  const filteredReports = useMemo(() => {
-    if (!currentUser?.schoolId) return [];
-    return learningReports.filter(r => r.schoolId === currentUser.schoolId);
-  }, [learningReports, currentUser]);
+  const filteredReports = useMemo(() => learningReports.filter(r => isClassMatch(r.classId, activeClassId)), [learningReports, activeClassId]);
   const filteredLearningDocumentation = useMemo(() => learningDocumentation.filter(d => isClassMatch(d.classId, activeClassId)), [learningDocumentation, activeClassId]);
   const filteredSupportDocuments = useMemo(() => supportDocuments.filter(d => isClassMatch(d.classId, activeClassId)), [supportDocuments, activeClassId]);
   
@@ -329,7 +326,7 @@ const App: React.FC = () => {
       return liaisonLogs.filter(l => {
           if (isClassMatch(l.classId, activeClassId)) return true;
           if (!l.classId || l.classId === 'undefined' || l.classId === 'null') {
-               const student = students.find(s => s.id === l.studentId);
+               const student = students.find(s => String(s.id).trim() === String(l.studentId).trim());
                if (student && isClassMatch(student.classId, activeClassId)) return true;
           }
           return false;
@@ -360,7 +357,7 @@ const App: React.FC = () => {
     const newDoc = { ...doc, id: (doc as LearningDocumentation).id || optimisticId } as LearningDocumentation;
 
     const oldDocs = learningDocumentation;
-    const newDocs = oldDocs.find(d => d.id === newDoc.id)
+    const newDocs = oldDocs.find(d => String(d.id).trim() === String(newDoc.id).trim())
       ? oldDocs.map(d => d.id === newDoc.id ? newDoc : d)
       : [newDoc, ...oldDocs];
 
@@ -404,7 +401,7 @@ const App: React.FC = () => {
     const newTransaction = { ...transaction, id: transaction.id || optimisticId };
 
     const oldTransactions = bosTransactions;
-    const newTransactions = oldTransactions.find(t => t.id === newTransaction.id)
+    const newTransactions = oldTransactions.find(t => String(t.id).trim() === String(newTransaction.id).trim())
       ? oldTransactions.map(t => t.id === newTransaction.id ? newTransaction : t)
       : [...oldTransactions, newTransaction];
 
@@ -457,8 +454,7 @@ const App: React.FC = () => {
                   const autoReport: LearningReport = {
                       id: `jurnal-${reportDate}-${activeClassId}`, classId: activeClassId, date: reportDate,
                       type: 'Jurnal Harian', subject: uniqueSubjects, topic: combinedTopics || 'Kegiatan Pembelajaran Harian',
-                      documentLink: '', teacherName: (currentUser?.fullName && currentUser?.fullName !== 'undefined') ? currentUser.fullName : 'Guru Kelas',
-                      schoolId: currentUser?.schoolId || 'default-school'
+                      documentLink: '', teacherName: (currentUser?.fullName && currentUser?.fullName !== 'undefined') ? currentUser.fullName : 'Guru Kelas'
                   };
                   await apiService.saveLearningReport(autoReport);
                   const newReports = await apiService.getLearningReports(activeClassId);
@@ -481,7 +477,7 @@ const App: React.FC = () => {
   const handleProcessPermission = async (id: string, action: 'approve' | 'reject') => {
       setProcessingPermissionId(id);
       try {
-          const req = permissionRequests.find(p => p.id === id);
+          const req = permissionRequests.find(p => String(p.id).trim() === String(id).trim());
           if (isDemoMode) {
               setPermissionRequests(prev => prev.map(p => p.id === id ? { ...p, status: action === 'approve' ? 'Approved' : 'Rejected' } : p));
               if (action === 'approve' && req) {
@@ -599,7 +595,7 @@ const App: React.FC = () => {
 
     if (isDemoMode) return;
 
-    const toggledItem = newAgendas.find(a => a.id === id);
+    const toggledItem = newAgendas.find(a => String(a.id).trim() === String(id).trim());
     if (toggledItem) {
       try {
         await apiService.updateAgenda(toggledItem);
@@ -669,15 +665,15 @@ const App: React.FC = () => {
   
   // General & Logs
   const handleSaveGrade = async (studentId: string, subjectId: string, gradeData: any, classId: string) => { if(!isDemoMode) await apiService.saveGrade(studentId, subjectId, gradeData, classId); };
-  const handleCreateLog = async (log: BehaviorLog) => { setCounselingLogs([log, ...counselingLogs]); if(log.point !== 0) { const student = students.find(s => s.id === log.studentId); if(student) { const newScore = Math.min(100, Math.max(0, student.behaviorScore + log.point)); handleUpdateStudent({ ...student, behaviorScore: newScore }); } } if(!isDemoMode) await apiService.createCounselingLog(log); handleShowNotification('Data konseling berhasil disimpan!', 'success'); };
+  const handleCreateLog = async (log: BehaviorLog) => { setCounselingLogs([log, ...counselingLogs]); if(log.point !== 0) { const student = students.find(s => String(s.id).trim() === String(log.studentId).trim()); if(student) { const newScore = Math.min(100, Math.max(0, student.behaviorScore + log.point)); handleUpdateStudent({ ...student, behaviorScore: newScore }); } } if(!isDemoMode) await apiService.createCounselingLog(log); handleShowNotification('Data konseling berhasil disimpan!', 'success'); };
   const handleUpdateProfile = async (type: 'teacher' | 'school', data: any) => { if (type === 'teacher') { setTeacherProfile(data); if (!currentUser) return; const updatedUser: User = { ...currentUser, fullName: data.name, nip: data.nip, nuptk: data.nuptk, birthInfo: data.birthInfo, education: data.education, position: data.position, rank: data.rank, classId: data.teachingClass, email: data.email, phone: data.phone, address: data.address, photo: data.photo, signature: data.signature }; setCurrentUser(updatedUser); if (!isDemoMode) await apiService.saveUser(updatedUser); } else { setSchoolProfile(data); if (!isDemoMode) await apiService.saveProfile('school', data); } };
   
   // Holidays & Assessments
   const handleAddHoliday = async (holidaysToAdd: Omit<Holiday, 'id'>[]) => { if (isDemoMode) { const newHolidays = holidaysToAdd.map(h => ({ ...h, id: Date.now().toString() + Math.random() })); setHolidays(prev => [...prev, ...newHolidays].sort((a,b) => a.date.localeCompare(b.date))); handleShowNotification("Hari libur berhasil ditambahkan (Demo).", "success"); return; } try { await apiService.saveHolidayBatch(holidaysToAdd); handleShowNotification("Hari libur berhasil disimpan!", "success"); await fetchData(); } catch (e) { handleShowNotification("Gagal menyimpan hari libur.", "error"); } };
   const handleUpdateHoliday = async (updatedHoliday: Holiday) => { if (isDemoMode) { setHolidays(prev => prev.map(h => h.id === updatedHoliday.id ? updatedHoliday : h).sort((a,b) => a.date.localeCompare(b.date))); handleShowNotification("Hari libur diperbarui (Demo).", "success"); return; } try { await apiService.updateHoliday(updatedHoliday); handleShowNotification("Hari libur berhasil diperbarui.", "success"); await fetchData(); } catch(e) { handleShowNotification("Gagal memperbarui hari libur.", "error"); } };
   const handleDeleteHoliday = async (id: string) => { showConfirm('Hapus hari libur ini?', async () => { if (isDemoMode) { setHolidays(prev => prev.filter(h => h.id !== id)); handleShowNotification("Hari libur dihapus (Demo).", "success"); return; } try { await apiService.deleteHoliday(id); handleShowNotification("Hari libur berhasil dihapus.", "success"); await fetchData(); } catch (e) { handleShowNotification("Gagal menghapus hari libur.", "error"); } }); };
-  const handleSaveSikap = async (studentId: string, assessment: Omit<SikapAssessment, 'studentId' | 'classId'>) => { setSikapAssessments(prev => { const existing = prev.find(a => a.studentId === studentId); if (existing) return prev.map(a => a.studentId === studentId ? { ...existing, ...assessment } : a); return [...prev, { studentId, classId: activeClassId, ...assessment }]; }); if (!isDemoMode) await apiService.saveSikapAssessment(studentId, activeClassId, assessment); };
-  const handleSaveKarakter = async (studentId: string, assessment: Omit<KarakterAssessment, 'studentId' | 'classId'>) => { setKarakterAssessments(prev => { const existing = prev.find(a => a.studentId === studentId); if (existing) return prev.map(a => a.studentId === studentId ? { ...existing, ...assessment } : a); return [...prev, { studentId, classId: activeClassId, ...assessment }]; }); if (!isDemoMode) await apiService.saveKarakterAssessment(studentId, activeClassId, assessment); };
+  const handleSaveSikap = async (studentId: string, assessment: Omit<SikapAssessment, 'studentId' | 'classId'>) => { setSikapAssessments(prev => { const existing = prev.find(a => String(a.studentId).trim() === String(studentId).trim()); if (existing) return prev.map(a => String(a.studentId).trim() === String(studentId).trim() ? { ...existing, ...assessment } : a); return [...prev, { studentId, classId: activeClassId, ...assessment }]; }); if (!isDemoMode) await apiService.saveSikapAssessment(studentId, activeClassId, assessment); };
+  const handleSaveKarakter = async (studentId: string, assessment: Omit<KarakterAssessment, 'studentId' | 'classId'>) => { setKarakterAssessments(prev => { const existing = prev.find(a => String(a.studentId).trim() === String(studentId).trim()); if (existing) return prev.map(a => String(a.studentId).trim() === String(studentId).trim() ? { ...existing, ...assessment } : a); return [...prev, { studentId, classId: activeClassId, ...assessment }]; }); if (!isDemoMode) await apiService.saveKarakterAssessment(studentId, activeClassId, assessment); };
   
   // Accounts
   const handleAddUserAccount = async (user: Omit<User, 'id'>) => {
@@ -747,7 +743,7 @@ const App: React.FC = () => {
     const newLink = { ...link, id: (link as EmploymentLink).id || optimisticId } as EmploymentLink;
 
     const oldLinks = employmentLinks;
-    const newLinks = oldLinks.find(l => l.id === newLink.id)
+    const newLinks = oldLinks.find(l => String(l.id).trim() === String(newLink.id).trim())
       ? oldLinks.map(l => l.id === newLink.id ? newLink : l)
       : [...oldLinks, newLink];
 
@@ -787,11 +783,10 @@ const App: React.FC = () => {
   // Learning Reports
   const handleSaveReport = async (report: Omit<LearningReport, 'id'> | LearningReport) => {
     const optimisticId = `report-${Date.now()}`;
-    const reportWithSchoolId = { ...report, schoolId: currentUser?.schoolId || 'default-school' };
-    const newReport = { ...reportWithSchoolId, id: (report as LearningReport).id || optimisticId } as LearningReport;
+    const newReport = { ...report, id: (report as LearningReport).id || optimisticId } as LearningReport;
 
     const oldReports = learningReports;
-    const newReports = oldReports.find(r => r.id === newReport.id)
+    const newReports = oldReports.find(r => String(r.id).trim() === String(newReport.id).trim())
       ? oldReports.map(r => r.id === newReport.id ? newReport : r)
       : [...oldReports, newReport];
 
@@ -841,7 +836,7 @@ const App: React.FC = () => {
     const newDoc = { ...doc, id: (doc as SupportDocument).id || optimisticId } as SupportDocument;
 
     const oldDocs = supportDocuments;
-    const newDocs = oldDocs.find(d => d.id === newDoc.id)
+    const newDocs = oldDocs.find(d => String(d.id).trim() === String(newDoc.id).trim())
       ? oldDocs.map(d => d.id === newDoc.id ? newDoc : d)
       : [newDoc, ...oldDocs];
 
@@ -884,7 +879,7 @@ const App: React.FC = () => {
     const newAsset = { ...asset, id: asset.id || optimisticId };
 
     const oldAssets = schoolAssets;
-    const newAssets = oldAssets.find(a => a.id === newAsset.id)
+    const newAssets = oldAssets.find(a => String(a.id).trim() === String(newAsset.id).trim())
       ? oldAssets.map(a => a.id === newAsset.id ? newAsset : a)
       : [...oldAssets, newAsset];
 
@@ -928,7 +923,7 @@ const App: React.FC = () => {
     const newLoan = { ...loan, id: loan.id || optimisticId };
 
     const oldLoans = bookLoans;
-    const newLoans = oldLoans.find(l => l.id === newLoan.id)
+    const newLoans = oldLoans.find(l => String(l.id).trim() === String(newLoan.id).trim())
       ? oldLoans.map(l => l.id === newLoan.id ? newLoan : l)
       : [newLoan, ...oldLoans];
 
@@ -1039,90 +1034,104 @@ const App: React.FC = () => {
       // Add minDelay to ensure at least 1s loading
       promises.push(minDelay);
 
+      const results = await Promise.all(promises.map(p => p.catch(e => {
+          console.warn("Individual fetch error:", e);
+          return null; // Return null to indicate failure
+      })));
+      
       const [
           fUsers, fStudents, fAgendas, fGrades, fCounseling, fExtracurriculars, 
           fProfiles, fHolidays, fAttendance, fSikap, fKarakter, fLinks, fReports, 
           fLearningDocs, fLiaison, fPermissions, fSupportDocs, fBookLoans, fClassConfig, fInventory, fSchoolAssets, fBOS,
           _delay // Placeholder for minDelay
-      ] = await Promise.all(promises);
+      ] = results;
       
-      setUsers(Array.isArray(fUsers) ? fUsers as User[] : []);
-      setStudents(Array.isArray(fStudents) ? fStudents as Student[] : []);
-      setAgendas(Array.isArray(fAgendas) ? (fAgendas as AgendaItem[]).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) : []);
-      setGrades(Array.isArray(fGrades) ? fGrades as GradeRecord[] : []);
-      setCounselingLogs(Array.isArray(fCounseling) ? (fCounseling as BehaviorLog[]).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) : []);
-      setHolidays(Array.isArray(fHolidays) ? (fHolidays as Holiday[]).sort((a,b) => a.date.localeCompare(b.date)) : []);
-      setAllAttendanceRecords(Array.isArray(fAttendance) ? fAttendance as any[] : []);
-      setSikapAssessments(Array.isArray(fSikap) ? fSikap as SikapAssessment[] : []);
-      setKarakterAssessments(Array.isArray(fKarakter) ? fKarakter as KarakterAssessment[] : []);
-      setEmploymentLinks(Array.isArray(fLinks) ? fLinks as EmploymentLink[] : []);
-      setLearningReports(Array.isArray(fReports) ? fReports as LearningReport[] : []);
-      setLearningDocumentation(Array.isArray(fLearningDocs) ? fLearningDocs as LearningDocumentation[] : []);
-      setLiaisonLogs(Array.isArray(fLiaison) ? fLiaison as LiaisonLog[] : []);
-      setSupportDocuments(Array.isArray(fSupportDocs) ? fSupportDocs as SupportDocument[] : []);
-      setBookLoans(Array.isArray(fBookLoans) ? fBookLoans as BookLoan[] : []);
+      if (fUsers !== null) setUsers(Array.isArray(fUsers) ? fUsers as User[] : []);
+      if (fStudents !== null) setStudents(Array.isArray(fStudents) ? fStudents as Student[] : []);
+      if (fAgendas !== null) setAgendas(Array.isArray(fAgendas) ? (fAgendas as AgendaItem[]).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) : []);
+      if (fGrades !== null) setGrades(Array.isArray(fGrades) ? fGrades as GradeRecord[] : []);
+      if (fCounseling !== null) setCounselingLogs(Array.isArray(fCounseling) ? (fCounseling as BehaviorLog[]).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) : []);
+      if (fHolidays !== null) setHolidays(Array.isArray(fHolidays) ? (fHolidays as Holiday[]).sort((a,b) => a.date.localeCompare(b.date)) : []);
+      if (fAttendance !== null) setAllAttendanceRecords(Array.isArray(fAttendance) ? fAttendance as any[] : []);
+      if (fSikap !== null) setSikapAssessments(Array.isArray(fSikap) ? fSikap as SikapAssessment[] : []);
+      if (fKarakter !== null) setKarakterAssessments(Array.isArray(fKarakter) ? fKarakter as KarakterAssessment[] : []);
+      if (fLinks !== null) setEmploymentLinks(Array.isArray(fLinks) ? fLinks as EmploymentLink[] : []);
+      if (fReports !== null) setLearningReports(Array.isArray(fReports) ? fReports as LearningReport[] : []);
+      if (fLearningDocs !== null) setLearningDocumentation(Array.isArray(fLearningDocs) ? fLearningDocs as LearningDocumentation[] : []);
+      if (fLiaison !== null) setLiaisonLogs(Array.isArray(fLiaison) ? fLiaison as LiaisonLog[] : []);
+      if (fSupportDocs !== null) setSupportDocuments(Array.isArray(fSupportDocs) ? fSupportDocs as SupportDocument[] : []);
+      if (fBookLoans !== null) setBookLoans(Array.isArray(fBookLoans) ? fBookLoans as BookLoan[] : []);
       
       // Set global inventory state
-      if (Array.isArray(fInventory)) {
+      if (fInventory !== null && Array.isArray(fInventory)) {
           setInventory(fInventory as InventoryItem[]);
       }
 
       // Set global school assets state
-      if (Array.isArray(fSchoolAssets)) {
+      if (fSchoolAssets !== null && Array.isArray(fSchoolAssets)) {
           setSchoolAssets(fSchoolAssets as SchoolAsset[]);
       }
 
       // Set BOS state
-      if (Array.isArray(fBOS)) {
+      if (fBOS !== null && Array.isArray(fBOS)) {
           setBosTransactions(fBOS as BOSTransaction[]);
       }
 
-      const fetchedKktp = fClassConfig?.KKTP || fClassConfig?.kktp;
-      if (fetchedKktp && Object.keys(fetchedKktp).length > 0) {
-        setKktpMap(fetchedKktp);
-        console.log("KKTP Map set from fetched config:", fetchedKktp);
-      } else {
-        const defaults: Record<string, number> = {};
-        MOCK_SUBJECTS.forEach(s => { defaults[s.id] = s.kkm; });
-        setKktpMap(defaults);
-        console.log("KKTP Map set to defaults:", defaults);
+      if (fClassConfig !== null) {
+          const fetchedKktp = fClassConfig?.KKTP || fClassConfig?.kktp;
+          if (fetchedKktp && Object.keys(fetchedKktp).length > 0) {
+            setKktpMap(fetchedKktp);
+            console.log("KKTP Map set from fetched config:", fetchedKktp);
+          } else {
+            const defaults: Record<string, number> = {};
+            MOCK_SUBJECTS.forEach(s => { defaults[s.id] = s.kkm; });
+            setKktpMap(defaults);
+            console.log("KKTP Map set to defaults:", defaults);
+          }
       }
       
-      const hydratedPermissions = (fPermissions as PermissionRequest[]).map((p: any) => ({
-          ...p,
-          studentName: (fStudents as Student[]).find((s: Student) => s.id === p.studentId)?.name || 'Siswa Tidak Dikenal'
-      }));
-      setPermissionRequests(hydratedPermissions);
+      if (fPermissions !== null && fStudents !== null) {
+          const hydratedPermissions = (fPermissions as PermissionRequest[]).map((p: any) => ({
+              ...p,
+              studentName: (fStudents as Student[]).find((s: Student) => String(s.id).trim() === String(p.studentId).trim())?.name || 'Siswa Tidak Dikenal'
+          }));
+          setPermissionRequests(hydratedPermissions);
+          cacheService.set('permissionRequests', hydratedPermissions);
+      }
 
-      // Cache the new data
-      cacheService.set('users', fUsers as User[]);
-      cacheService.set('students', fStudents as Student[]);
-      cacheService.set('agendas', (fAgendas as AgendaItem[]).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-      cacheService.set('grades', fGrades as GradeRecord[]);
-      cacheService.set('counselingLogs', (fCounseling as BehaviorLog[]).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-      cacheService.set('holidays', (fHolidays as Holiday[]).sort((a,b) => a.date.localeCompare(b.date)));
-      cacheService.set('allAttendanceRecords', fAttendance as any[]);
-      cacheService.set('sikapAssessments', fSikap as SikapAssessment[]);
-      cacheService.set('karakterAssessments', fKarakter as KarakterAssessment[]);
-      cacheService.set('employmentLinks', fLinks as EmploymentLink[]);
-      cacheService.set('learningReports', fReports as LearningReport[]);
-      cacheService.set('learningDocumentation', fLearningDocs as LearningDocumentation[]);
-      cacheService.set('liaisonLogs', fLiaison as LiaisonLog[]);
-      cacheService.set('permissionRequests', hydratedPermissions);
-      cacheService.set('supportDocuments', fSupportDocs as SupportDocument[]);
-      cacheService.set('inventory', fInventory as InventoryItem[]);
-      cacheService.set('schoolAssets', fSchoolAssets as SchoolAsset[]);
-      cacheService.set('bosTransactions', fBOS as BOSTransaction[]);
-      cacheService.set('bookLoans', fBookLoans as BookLoan[]);
-      cacheService.set('extracurriculars', fExtracurriculars as Extracurricular[]);
+      // Cache the new data (only if not null)
+      if (fUsers !== null) cacheService.set('users', fUsers as User[]);
+      if (fStudents !== null) cacheService.set('students', fStudents as Student[]);
+      if (fAgendas !== null) cacheService.set('agendas', (fAgendas as AgendaItem[]).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      if (fGrades !== null) cacheService.set('grades', fGrades as GradeRecord[]);
+      if (fCounseling !== null) cacheService.set('counselingLogs', (fCounseling as BehaviorLog[]).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      if (fHolidays !== null) cacheService.set('holidays', (fHolidays as Holiday[]).sort((a,b) => a.date.localeCompare(b.date)));
+      if (fAttendance !== null) cacheService.set('allAttendanceRecords', fAttendance as any[]);
+      if (fSikap !== null) cacheService.set('sikapAssessments', fSikap as SikapAssessment[]);
+      if (fKarakter !== null) cacheService.set('karakterAssessments', fKarakter as KarakterAssessment[]);
+      if (fLinks !== null) cacheService.set('employmentLinks', fLinks as EmploymentLink[]);
+      if (fReports !== null) cacheService.set('learningReports', fReports as LearningReport[]);
+      if (fLearningDocs !== null) cacheService.set('learningDocumentation', fLearningDocs as LearningDocumentation[]);
+      if (fLiaison !== null) cacheService.set('liaisonLogs', fLiaison as LiaisonLog[]);
+      if (fSupportDocs !== null) cacheService.set('supportDocuments', fSupportDocs as SupportDocument[]);
+      if (fInventory !== null) cacheService.set('inventory', fInventory as InventoryItem[]);
+      if (fSchoolAssets !== null) cacheService.set('schoolAssets', fSchoolAssets as SchoolAsset[]);
+      if (fBOS !== null) cacheService.set('bosTransactions', fBOS as BOSTransaction[]);
+      if (fBookLoans !== null) cacheService.set('bookLoans', fBookLoans as BookLoan[]);
       
-      if (fExtracurriculars) {
-          setExtracurriculars(fExtracurriculars as Extracurricular[]);
-      } else {
-          setExtracurriculars([]);
+      if (fExtracurriculars !== null) {
+          setExtracurriculars(Array.isArray(fExtracurriculars) ? fExtracurriculars as Extracurricular[] : []);
+          cacheService.set('extracurriculars', Array.isArray(fExtracurriculars) ? fExtracurriculars as Extracurricular[] : []);
       }
       
-      const profilesTyped = fProfiles as { teacher?: TeacherProfileData, school?: SchoolProfileData };
+      const profilesTyped = (fProfiles || {}) as { teacher?: TeacherProfileData, school?: SchoolProfileData };
+
+      if (profilesTyped.teacher) {
+          setTeacherProfile(prev => ({
+              ...prev,
+              ...profilesTyped.teacher
+          }));
+      }
 
       if (currentUser) {
           setTeacherProfile(prev => ({
@@ -1417,7 +1426,7 @@ const App: React.FC = () => {
         if (isStudentRole) { setCurrentView('dashboard'); return null; }
         const teachersList = users.filter(u => u.role === 'guru');
         return <LearningReportsView 
-                  reports={learningReports}
+                  reports={filteredReports}
                   subjects={MOCK_SUBJECTS}
                   onSave={handleSaveReport}
                   onDelete={handleDeleteReport}
