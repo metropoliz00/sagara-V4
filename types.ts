@@ -1,7 +1,6 @@
 
 export interface User {
   id: string;
-  schoolId?: string; // Added schoolId
   username: string;
   password?: string;
   role: 'admin' | 'guru' | 'siswa' | 'supervisor';
@@ -188,8 +187,8 @@ export interface SupportDocument {
 
 export interface LearningReport {
   id: string;
-  schoolId: string; // Added schoolId
   classId: string;
+  schoolId?: string;
   date: string;
   type: 'Jurnal Harian' | 'RPP/Modul Ajar' | 'Dokumentasi' | 'Lainnya';
   subject: string;
@@ -385,8 +384,7 @@ export type ViewState =
   | 'supervisor-overview'
   | 'school-assets'
   | 'bos-admin'
-  | 'book-loan'
-  | 'school-bell';
+  | 'book-loan';
 
 export interface BookLoan {
   id: string;
@@ -408,22 +406,4 @@ export interface BookInventory {
   stock: number;
   totalStock: number;
   coverUrl?: string;
-}
-
-// --- SCHOOL BELL --- 
-export interface BellScheduleItem {
-  id: string;
-  time: string; // HH:MM
-  label: string;
-  sound: string; // 'beep', 'bell', 'custom' or TTS text
-  type: 'sound' | 'tts' | 'sound-and-tts';
-  days: number[]; // 0=Sunday, 1=Monday, ...
-}
-
-export interface BellSettings {
-  isEnabled: boolean;
-  volume: number;
-  soundType: 'default' | 'custom';
-  customSoundUrl?: string;
-  daysActive: number[]; // 0=Sunday, 1=Monday, ...
 }
