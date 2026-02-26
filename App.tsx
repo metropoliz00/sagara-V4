@@ -153,6 +153,37 @@ const App: React.FC = () => {
       }
   }, [currentView, currentUser]);
 
+  useEffect(() => {
+    const VIEW_TITLES: Record<ViewState, string> = {
+      'dashboard': 'Dashboard',
+      'students': 'Data Siswa',
+      'attendance': 'Absensi',
+      'grades': 'Nilai & Rapor',
+      'admin': 'Administrasi Kelas',
+      'counseling': 'Konseling & Perilaku',
+      'activities': 'Kegiatan & Ekskul',
+      'profile': 'Profil',
+      'pendahuluan': 'Pendahuluan',
+      'attitude': 'DPL & 7KAIH',
+      'accounts': 'Manajemen Akun',
+      'employment-links': 'Link Kepegawaian',
+      'learning-reports': 'Laporan Pembelajaran',
+      'learning-journal': 'Jurnal Pembelajaran',
+      'learning-documentation': 'Dokumentasi Pembelajaran',
+      'student-monitor': 'Monitoring Siswa',
+      'liaison-book': 'Buku Penghubung',
+      'backup-restore': 'Backup & Restore',
+      'support-docs': 'Bukti Dukung',
+      'supervisor-overview': 'Overview KS',
+      'school-assets': 'Sarana Prasarana',
+      'bos-admin': 'Pengelolaan BOS',
+      'book-loan': 'Peminjaman Buku'
+    };
+
+    const title = VIEW_TITLES[currentView] || 'Dashboard';
+    document.title = `${title} | SAGARA`;
+  }, [currentView]);
+
   const canSelectClass = useMemo(() => {
     if (!currentUser) return false;
     const pos = (currentUser.position || '').toLowerCase();
