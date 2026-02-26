@@ -46,6 +46,38 @@ const App: React.FC = () => {
       return (localStorage.getItem('sagara_view') as ViewState) || 'dashboard';
   });
 
+  // Effect to update document title based on current view
+  useEffect(() => {
+    const viewTitles: Record<ViewState, string> = {
+      'dashboard': 'Dashboard',
+      'students': 'Data Siswa',
+      'attendance': 'Absensi',
+      'grades': 'Nilai & Rapor',
+      'admin': 'Administrasi Kelas',
+      'counseling': 'Konseling & Pelanggaran',
+      'activities': 'Ekstrakurikuler',
+      'profile': 'Profil Guru',
+      'pendahuluan': 'Pendahuluan',
+      'attitude': 'Penilaian Sikap',
+      'accounts': 'Manajemen Akun',
+      'employment-links': 'Tautan Kepegawaian',
+      'learning-reports': 'Laporan Pembelajaran',
+      'learning-journal': 'Jurnal Pembelajaran',
+      'learning-documentation': 'Dokumentasi Pembelajaran',
+      'student-monitor': 'Monitor Siswa',
+      'liaison-book': 'Buku Penghubung',
+      'backup-restore': 'Backup & Restore',
+      'support-docs': 'Dokumen Pendukung',
+      'supervisor-overview': 'Supervisi',
+      'school-assets': 'Sarana Prasarana',
+      'bos-admin': 'Manajemen BOS',
+      'book-loan': 'Peminjaman Buku'
+    };
+
+    const title = viewTitles[currentView] || 'Sistem Akademik';
+    document.title = `${title} | Sistem Akademik & Administrasi Terintegrasi`;
+  }, [currentView]);
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
