@@ -26,7 +26,6 @@ import SupervisorOverview from './components/SupervisorOverview';
 import SchoolAssetsAdmin from './components/SchoolAssetsAdmin'; 
 import BOSManagement from './components/BOSManagement'; // NEW IMPORT
 import BookLoanView from './components/BookLoanView';
-import SchoolBell from './components/SchoolBell';
 import CustomModal from './components/CustomModal'; 
 import { ViewState, Student, AgendaItem, Extracurricular, BehaviorLog, GradeRecord, TeacherProfileData, SchoolProfileData, User, Holiday, SikapAssessment, KarakterAssessment, EmploymentLink, LearningReport, LiaisonLog, PermissionRequest, LearningJournalEntry, SupportDocument, InventoryItem, SchoolAsset, BOSTransaction, LearningDocumentation, BookLoan } from './types';
 import { MOCK_SUBJECTS, MOCK_STUDENTS, MOCK_EXTRACURRICULARS } from './constants';
@@ -1536,12 +1535,6 @@ const App: React.FC = () => {
                   data={fullBackupData} 
                   onRestore={handleRestoreData} 
                />;
-      case 'school-bell':
-        if (currentUser.role !== 'admin') {
-          setCurrentView('dashboard');
-          return null;
-        }
-        return <SchoolBell />;
       default:
         // Fallback to Dashboard Container
         return <DashboardContainer

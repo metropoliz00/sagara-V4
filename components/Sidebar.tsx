@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Users, CalendarCheck, GraduationCap, School, LogOut, X, ChevronRight, 
   UserCog, HeartHandshake, Tent, BookText, Smile, Link2, FileText, Contact, BookOpen, 
-  UserCheck, Database, NotebookPen, Files, Activity, Building, Wallet, Camera, Book, Bell
+  UserCheck, Database, NotebookPen, Files, Activity, Building, Wallet, Camera, Book
 } from 'lucide-react';
 import { ViewState, User } from '../types';
 
@@ -61,7 +61,6 @@ const menuGroups = [
       { id: 'admin', label: 'Administrasi Kelas', icon: School, roles: ['admin', 'guru', 'supervisor'] },
       { id: 'book-loan', label: 'Peminjaman Buku', icon: Book, roles: ['admin', 'guru', 'supervisor'] },
       { id: 'school-assets', label: 'Sarana Prasarana', icon: Building, roles: ['admin', 'supervisor'] },
-      { id: 'school-bell', label: 'Bel Sekolah', icon: Bell, roles: ['admin'] },
       { id: 'bos-admin', label: 'Pengelolaan BOS', icon: Wallet, roles: ['admin', 'supervisor'] },
       { id: 'support-docs', label: 'Bukti Dukung', icon: Files, roles: ['admin', 'guru', 'supervisor'] },
     ]
